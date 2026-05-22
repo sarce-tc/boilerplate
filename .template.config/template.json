@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Santiago Arce",
+  "classifications": [
+    "API",
+    "Clean Architecture",
+    "Layered",
+    ".NET",
+    "Microservice"
+  ],
+  "identity": "Microservice.Template",
+  "name": "Microservicio arquitectura limpia",
+  "shortName": "microservice-sln",
+  "sourceName": "Microservice",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "solution"
+  },
+  "sources": [
+    {
+      "exclude": [
+        "**/bin/**",
+        "**/obj/**",
+        "**/.vs/**",
+        "**/.git/**",
+        "**/*.user",
+        "**/*.suo"
+      ]
+    }
+  ]
+}
