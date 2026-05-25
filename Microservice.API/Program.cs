@@ -51,6 +51,7 @@ try
     app.UseCors("DefaultCors");
     app.UseIdempotency();
     app.UseHttpsRedirection();
+    app.UseAuthentication(); // must come before UseAuthorization
     app.UseAuthorization();
     app.MapControllers();
     app.MapCustomHealthChecks();
