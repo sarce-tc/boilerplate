@@ -131,21 +131,22 @@ namespace Microservice.Test.Application.Features.Examples.Queries.GetAllExample
         public async Task Handle_ShouldMapEntitiesToDtos()
         {
             // Arrange
+            // Handler uses x => x.Id > 0 as predicate — match with It.IsAny
             var query = new GetAllExamplesQuery();
             var examples = new List<Example> { new Example("Test", "Description") { Id = 1 } };
 
             _mockReadRepository
                 .Setup(r => r.GetListAsync(
-                    null,
-                    null,
-                    null,
-                    null,
-                    true,
+                    It.IsAny<Expression<Func<Example, bool>>>(),
+                    It.IsAny<Expression<Func<Example, Example>>>(),
+                    It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(),
+                    It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                    It.IsAny<bool>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(examples);
 
             _mockMapper
-                .Setup(m => m.Map<IEnumerable<GetAllExamplesDto>>(examples))
+                .Setup(m => m.Map<IEnumerable<GetAllExamplesDto>>(It.IsAny<IEnumerable<Example>>()))
                 .Returns(new List<GetAllExamplesDto>());
 
             // Act
@@ -153,7 +154,7 @@ namespace Microservice.Test.Application.Features.Examples.Queries.GetAllExample
 
             // Assert
             _mockMapper.Verify(
-                m => m.Map<IEnumerable<GetAllExamplesDto>>(examples),
+                m => m.Map<IEnumerable<GetAllExamplesDto>>(It.IsAny<IEnumerable<Example>>()),
                 Times.Once);
         }
 
@@ -166,11 +167,11 @@ namespace Microservice.Test.Application.Features.Examples.Queries.GetAllExample
 
             _mockReadRepository
                 .Setup(r => r.GetListAsync(
-                    null,
-                    null,
-                    null,
-                    null,
-                    true,
+                    It.IsAny<Expression<Func<Example, bool>>>(),
+                    It.IsAny<Expression<Func<Example, Example>>>(),
+                    It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(),
+                    It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                    It.IsAny<bool>(),
                     cancellationToken))
                 .ReturnsAsync(new List<Example>());
 
@@ -184,11 +185,11 @@ namespace Microservice.Test.Application.Features.Examples.Queries.GetAllExample
             // Assert
             _mockReadRepository.Verify(
                 r => r.GetListAsync(
-                    null,
-                    null,
-                    null,
-                    null,
-                    true,
+                    It.IsAny<Expression<Func<Example, bool>>>(),
+                    It.IsAny<Expression<Func<Example, Example>>>(),
+                    It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(),
+                    It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                    It.IsAny<bool>(),
                     cancellationToken),
                 Times.Once);
         }
@@ -201,11 +202,11 @@ namespace Microservice.Test.Application.Features.Examples.Queries.GetAllExample
 
             _mockReadRepository
                 .Setup(r => r.GetListAsync(
-                    null,
-                    null,
-                    null,
-                    null,
-                    true,
+                    It.IsAny<Expression<Func<Example, bool>>>(),
+                    It.IsAny<Expression<Func<Example, Example>>>(),
+                    It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(),
+                    It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                    It.IsAny<bool>(),
                     It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("Database error"));
 

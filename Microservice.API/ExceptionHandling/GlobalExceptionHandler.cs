@@ -60,11 +60,11 @@ namespace Microservice.API.ExceptionHandling
             Exception exception,
             CancellationToken cancellationToken)
         {
-            // Get trace ID for tracking
             var traceId = Activity.Current?.Id ?? httpContext.TraceIdentifier;
-            var instance = httpContext.Request.Path; // Include request path in instance for better tracking
-            // Log exception
-            LogException(exception, traceId);
+            var correlationId = httpContext.Items["X-Correlation-Id"]?.ToString();
+            var instance = httpContext.Request.Path;
+
+            LogException(exception, traceId, correlationId);
 
             // Map exception to error
             var (error, statusCode) = MapExceptionToError(exception);
@@ -75,15 +75,20 @@ namespace Microservice.API.ExceptionHandling
                 statusCode,
                 exception,
                 traceId,
+                correlationId,
                 instance
             );
 
             // Set response
             httpContext.Response.StatusCode = statusCode;
-            httpContext.Response.ContentType = "application/problem+json";
 
-            // Write response
-            await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+            // Write response — pass contentType explicitly so WriteAsJsonAsync
+            // does not override it to "application/json; charset=utf-8"
+            await httpContext.Response.WriteAsJsonAsync(
+                problemDetails,
+                options: null,
+                contentType: "application/problem+json",
+                cancellationToken: cancellationToken);
 
             return true;
         }
@@ -180,6 +185,7 @@ namespace Microservice.API.ExceptionHandling
             int statusCode,
             Exception exception,
             string traceId,
+            string? correlationId,
             string instance)
         {
             var problemDetails = new ProblemDetails
@@ -188,13 +194,11 @@ namespace Microservice.API.ExceptionHandling
                 Title = error.Code,
                 Detail = error.Message,
                 Status = statusCode,
-                Instance = instance // Will be set by framework
+                Instance = instance
             };
 
-            // Add trace ID for debugging
             problemDetails.Extensions["traceId"] = traceId;
-
-            // Add timestamp
+            problemDetails.Extensions["correlationId"] = correlationId;
             problemDetails.Extensions["timestamp"] = DateTime.UtcNow;
 
             // Add exception details in development
@@ -221,7 +225,7 @@ namespace Microservice.API.ExceptionHandling
         /// - Stack trace (on error level)
         /// - Trace ID
         /// </summary>
-        private void LogException(Exception exception, string traceId)
+        private void LogException(Exception exception, string traceId, string? correlationId)
         {
             var logLevel = exception switch
             {
@@ -233,8 +237,9 @@ namespace Microservice.API.ExceptionHandling
             logger.Log(
                 logLevel,
                 exception,
-                "Unhandled exception occurred. TraceId: {TraceId}, ExceptionType: {ExceptionType}",
+                "Unhandled exception. TraceId: {TraceId}, CorrelationId: {CorrelationId}, ExceptionType: {ExceptionType}",
                 traceId,
+                correlationId,
                 exception.GetType().Name
             );
         }

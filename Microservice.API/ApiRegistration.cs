@@ -21,7 +21,7 @@ namespace Microservice.API
     {
         public static IServiceCollection AddApiServices(
             this IServiceCollection services,
-            IConfigurationBuilder configuration,
+            IConfigurationManager configuration,
             IWebHostEnvironment hostEnvironment)
         {
             // Add services to the container
@@ -98,12 +98,9 @@ namespace Microservice.API
             //if (hostEnvironment.IsDevelopment() && File.Exists("../.env.local"))
             //    configuration.AddDotNetEnv("../.env.local");
 
-            //services.AddHealthChecks()
-            //    .AddCheck<PostgresHealthCheck>("postgres");
-
-            //if(hostEnvironment.IsDevelopment())
-            //    services.AddHealthChecks()
-            //    .AddCheck<RedisHealthCheck>("redis");
+            services.AddObservability(configuration, hostEnvironment);
+            services.AddCustomHealthChecks(configuration);
+            services.AddCustomRateLimiting(configuration);
 
             services.AddCors(options =>
             {

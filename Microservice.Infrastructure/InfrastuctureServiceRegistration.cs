@@ -17,12 +17,10 @@ namespace Microservice.Infrastructure
             this IServiceCollection services, 
             IConfiguration configuration)
         {
-            // Database
-            services.AddDbContext<ExampleDbContext>(options => 
-                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"))
-                    .LogTo(Console.WriteLine, [DbLoggerCategory.Database.Command.Name], 
-                        Microsoft.Extensions.Logging.LogLevel.Information)
-                    .EnableSensitiveDataLogging());
+            // Database — SQL command logging is controlled via Serilog MinimumLevel overrides
+            // in appsettings (Microsoft.EntityFrameworkCore.Database.Command → Information)
+            services.AddDbContext<ExampleDbContext>(options =>
+                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
             // Caching
             services.AddMemoryCache();
