@@ -1,5 +1,6 @@
 using Microservice.Application.Common.Results;
 using Microservice.Application.Exceptions;
+using Microservice.Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
@@ -113,6 +114,12 @@ namespace Microservice.API.ExceptionHandling
             KeyNotFoundException => (
                 Error.NotFound("The requested resource was not found"),
                 StatusCodes.Status404NotFound
+            ),
+
+            // Domain rule violation — known business invariant rejected (e.g. cancel a completed order)
+            DomainException => (
+                Error.Conflict(exception.Message),
+                StatusCodes.Status409Conflict
             ),
 
             // Conflict/State
@@ -229,7 +236,8 @@ namespace Microservice.API.ExceptionHandling
         {
             var logLevel = exception switch
             {
-                ValidationException => LogLevel.Warning,
+                ValidationException  => LogLevel.Warning,
+                DomainException      => LogLevel.Warning,   // expected business-rule rejection
                 KeyNotFoundException => LogLevel.Information,
                 _ => LogLevel.Error
             };

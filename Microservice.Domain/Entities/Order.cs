@@ -1,4 +1,5 @@
 using Microservice.Domain.Common;
+using Microservice.Domain.Exceptions;
 
 namespace Microservice.Domain.Entities
 {
@@ -53,14 +54,14 @@ namespace Microservice.Domain.Entities
         public void Cancel()
         {
             if (Status == OrderStatus.Completed)
-                throw new InvalidOperationException("Cannot cancel a completed order.");
+                throw new DomainException("Cannot cancel a completed order.");
             Status = OrderStatus.Cancelled;
         }
 
         public void Complete()
         {
             if (Status == OrderStatus.Cancelled)
-                throw new InvalidOperationException("Cannot complete a cancelled order.");
+                throw new DomainException("Cannot complete a cancelled order.");
             Status = OrderStatus.Completed;
         }
     }

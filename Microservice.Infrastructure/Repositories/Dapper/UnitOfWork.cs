@@ -11,12 +11,16 @@ namespace Microservice.Infrastructure.Repositories.Dapper
 
         private ExampleWriteRepository? _exampleWrite;
         private ProductWriteRepository? _productWrite;
+        private OrderWriteRepository?   _orderWrite;
 
         public IExampleWriteRepository ExamplesWrite =>
             _exampleWrite ??= new ExampleWriteRepository(_connection!, _transaction!);
 
         public IProductWriteRepository ProductWrite =>
             _productWrite ??= new ProductWriteRepository(_connection!, _transaction!);
+
+        public IOrderWriteRepository OrdersWrite =>
+            _orderWrite ??= new OrderWriteRepository(_connection!, _transaction!);
 
         public async Task BeginTransactionAsync(CancellationToken ct = default)
         {

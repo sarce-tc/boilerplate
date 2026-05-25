@@ -1,13 +1,16 @@
 ﻿using Microservice.Application.Contracts.Infrastructure;
+using Microservice.Application.Contracts.Jobs;
 using Microservice.Application.Contracts.Persistence.Dapper;
 using Microservice.Application.Contracts.Persistence.EF;
 using Microservice.Infrastructure.Cache;
+using Microservice.Infrastructure.Jobs;
 using Microservice.Infrastructure.Persistence;
 using Microservice.Infrastructure.Repositories.Dapper;
 using Microservice.Infrastructure.Repositories.EF;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Channels;
 
 namespace Microservice.Infrastructure
 {
@@ -55,8 +58,22 @@ namespace Microservice.Infrastructure
             services.AddScoped<IProductReadRepository, ProductReadRepository>();
             services.AddScoped<IProductWriteRepository, ProductWriteRepository>();
 
+            // Order
+            services.AddScoped<IOrderReadRepository, OrderReadRepository>();
+            services.AddScoped<IOrderWriteRepository, OrderWriteRepository>();
+
             // UoW
             services.AddScoped<Application.Contracts.Persistence.Dapper.IUnitOfWork, UnitOfWork>();
+
+            // ── Background Jobs ───────────────────────────────────────────────
+            // Unbounded channel — consider Channel.CreateBounded<>(capacity) for
+            // backpressure in high-throughput scenarios.
+            services.AddSingleton(Channel.CreateUnbounded<ChannelWorkItem>(
+                new UnboundedChannelOptions { SingleReader = true }));
+
+            services.AddSingleton<IJobStatusStore, InMemoryJobStatusStore>();
+            services.AddSingleton<IJobQueue,       InMemoryJobQueue>();
+            services.AddHostedService<JobWorker>();
 
             return services;
         }
