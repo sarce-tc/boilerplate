@@ -6,30 +6,7 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.Examples.Commands.UpdateExample
 {
-    /// <summary>
-    /// Use Case: Update an existing Example record with new values.
-    /// 
-    /// When to use:
-    /// - When receiving a PUT request to modify a complete resource
-    /// - When AI agents generate suggestions to update existing records
-    /// - When synchronizing data changes from external systems
-    /// - For workflow transitions where entity state must change
-    /// 
-    /// Responsibilities:
-    /// - Retrieve the existing entity by ID
-    /// - Validate entity existence before modification
-    /// - Persist changes through the write repository
-    /// - Commit changes via Unit of Work pattern
-    /// 
-    /// AI Agent Integration:
-    /// - AI agents can use this to:
-    ///   * Update records based on learning outcomes
-    ///   * Apply automated corrections or enhancements
-    ///   * Reflect changes from external AI service predictions
-    /// 
-    /// Error Handling:
-    /// - Returns a failure result if the entity is not found (non-exception flow)
-    /// </summary>
+    // EF update path: IReadRepository<T>.GetEntityAsync + IWriteRepository<T>.Update + IUnitOfWork.SaveChangesAsync
     public class UpdateExampleCommandHandler(
         IReadRepository<Example> readRepository,
         IWriteRepository<Example> writeRepository,

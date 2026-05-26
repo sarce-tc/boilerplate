@@ -14,14 +14,28 @@ using System.Threading.Channels;
 
 namespace Microservice.Infrastructure
 {
+    // ═══════════════════════════════════════════════════════════════════════
+    // AGENT — DI registration for all infrastructure services.
+    //
+    // To register a NEW aggregate's Dapper repos, add two lines under "Order" block:
+    //   services.AddScoped<IMyEntityReadRepository,  MyEntityReadRepository>();
+    //   services.AddScoped<IMyEntityWriteRepository, MyEntityWriteRepository>();
+    // Write repos are also instantiated inside UnitOfWork (lazy, shared connection).
+    //
+    // Key registrations:
+    //   IDbConnectionFactory (Singleton) → creates NpgsqlConnection per request
+    //   IUnitOfWork (Scoped, Dapper)     → UnitOfWork; manages TX lifecycle
+    //   IJobQueue / IJobStatusStore      → Singleton in-memory job infrastructure
+    //   JobWorker                        → BackgroundService; drains the job channel
+    // ═══════════════════════════════════════════════════════════════════════
     public static class InfrastructureServiceRegistration
     {
         public static IServiceCollection AddInfrastructureServices(
-            this IServiceCollection services, 
+            this IServiceCollection services,
             IConfiguration configuration)
         {
-            // Database — SQL command logging is controlled via Serilog MinimumLevel overrides
-            // in appsettings (Microsoft.EntityFrameworkCore.Database.Command → Information)
+            // EF Core — SQL logging controlled via Serilog appsettings
+            // (Microsoft.EntityFrameworkCore.Database.Command → Information)
             services.AddDbContext<ExampleDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
@@ -29,45 +43,38 @@ namespace Microservice.Infrastructure
             services.AddMemoryCache();
             services.AddScoped<ICacheService, MemoryCacheService>();
 
-            // LINQ Repositories (EF)
+            // EF repositories (generic)
             services.AddScoped(typeof(Application.Contracts.Persistence.EF.IReadRepository<>), typeof(LINQRepository<>));
             services.AddScoped(typeof(Application.Contracts.Persistence.EF.IWriteRepository<>), typeof(LINQRepository<>));
             services.AddScoped(typeof(IQueryRepository<>), typeof(LINQRepository<>));
 
-            // SQL Raw Repositories (.NET 10 + C# 14)
-            // Separamos la implementación SQL raw en SqlRepository<>
-            services.AddScoped(typeof(ISqlQueryRepository<>), typeof(SqlRepository<>));
-            services.AddScoped(typeof(ISqlCommandRepository<>), typeof(SqlRepository<>));
-            services.AddScoped(typeof(ISqlRepository<>), typeof(SqlRepository<>));
+            // EF raw SQL repositories
+            services.AddScoped(typeof(ISqlQueryRepository<>),   typeof(SqlRepository<>));
+            services.AddScoped(typeof(ISqlCommandRepository<>),  typeof(SqlRepository<>));
+            services.AddScoped(typeof(ISqlRepository<>),         typeof(SqlRepository<>));
 
-            // Custom repositories / UnitOfWork
+            // EF UoW (delegates to DbContext)
             services.AddScoped<Application.Contracts.Persistence.IUnitOfWork>(sp =>
                 sp.GetRequiredService<ExampleDbContext>());
 
-            // Dapper Repositories
-
-            Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+            // ── Dapper ────────────────────────────────────────────────────────
+            Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true; // snake_case → PascalCase
 
             services.AddSingleton<IDbConnectionFactory, SqlConnectionFactory>();
 
-            // Example
-            services.AddScoped<IExampleReadRepository, ExampleReadRepository>();
+            // Example aggregate
+            services.AddScoped<IExampleReadRepository,  ExampleReadRepository>();
             services.AddScoped<IExampleWriteRepository, ExampleWriteRepository>();
 
-            // Product
-            services.AddScoped<IProductReadRepository, ProductReadRepository>();
-            services.AddScoped<IProductWriteRepository, ProductWriteRepository>();
-
-            // Order
-            services.AddScoped<IOrderReadRepository, OrderReadRepository>();
+            // Order aggregate
+            services.AddScoped<IOrderReadRepository,  OrderReadRepository>();
             services.AddScoped<IOrderWriteRepository, OrderWriteRepository>();
 
-            // UoW
+            // Dapper UoW
             services.AddScoped<Application.Contracts.Persistence.Dapper.IUnitOfWork, UnitOfWork>();
 
             // ── Background Jobs ───────────────────────────────────────────────
-            // Unbounded channel — consider Channel.CreateBounded<>(capacity) for
-            // backpressure in high-throughput scenarios.
+            // Use Channel.CreateBounded<>(capacity) instead for backpressure.
             services.AddSingleton(Channel.CreateUnbounded<ChannelWorkItem>(
                 new UnboundedChannelOptions { SingleReader = true }));
 

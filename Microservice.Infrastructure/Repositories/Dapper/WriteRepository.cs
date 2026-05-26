@@ -6,7 +6,14 @@ using System.Data;
 
 namespace Microservice.Infrastructure.Repositories.Dapper
 {
-    // Modificar WriteRepository<T> para aceptar conexión externa
+    // ═══════════════════════════════════════════════════════════════════════
+    // AGENT — Dapper write base. Subclass and override TableName, AddAsync, UpdateAsync.
+    // Two constructors — always implement both in concrete repos:
+    //   DI  → WriteRepository(IDbConnectionFactory)               standalone use
+    //   UoW → WriteRepository(NpgsqlConnection, NpgsqlTransaction) inside UnitOfWork
+    // DeleteAsync is fully implemented here (DELETE FROM {table} WHERE id = @Id).
+    // Pass _transaction in every Dapper call so the SQL joins the active UoW TX.
+    // ═══════════════════════════════════════════════════════════════════════
     public abstract class WriteRepository<T> : IWriteRepository<T>
         where T : BaseDomainModel
     {
@@ -14,13 +21,11 @@ namespace Microservice.Infrastructure.Repositories.Dapper
         protected readonly IDbConnection? _externalConnection;
         protected IDbTransaction? _transaction;
 
-        // Constructor normal — crea su propia conexión
         protected WriteRepository(IDbConnectionFactory connectionFactory)
         {
             _connectionFactory = connectionFactory;
         }
 
-        // Constructor para UnitOfWork — usa conexión compartida
         protected WriteRepository(NpgsqlConnection connection, NpgsqlTransaction transaction)
         {
             _externalConnection = connection;

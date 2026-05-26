@@ -4,25 +4,8 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.Examples.Commands.CreateExample
 {
-    /// <summary>
-    /// Validator for CreateExampleCommand
-    /// 
-    /// Use Case: Validate incoming create command before handler execution
-    /// 
-    /// Validation Rules:
-    /// - Name: Required, max 200 characters
-    /// - Description: Optional, max 1000 characters
-    /// 
-    /// Integration with Result Pattern:
-    /// - Invalid commands return Result<int>.Failure() instead of exception
-    /// - Validation errors are included in Result.Error property
-    /// - AI agents can access validation errors without try-catch
-    /// 
-    /// Pipeline Behavior:
-    /// - Automatically invoked by ValidationBehaviour
-    /// - Executes before handler reaches business logic
-    /// - Supports functional error handling
-    /// </summary>
+    // Invoked by ValidationBehaviour before the handler; failures → Result.Failure (not exception)
+    // Name: required, unique (async DB check), max 200 chars. Description: optional, max 1000 chars.
     public class CreateExampleCommandValidator : AbstractValidator<CreateExampleCommand>
     {
         private readonly IReadRepository<Example> _readRepository;
@@ -35,7 +18,7 @@ namespace Microservice.Application.Features.Examples.Commands.CreateExample
                 .WithMessage("Name is required")
                 .MaximumLength(200)
                 .WithMessage("Name must not exceed 200 characters")
-                // Database validation: Check if name already exists
+                // Async uniqueness check — runs after the sync rules above
                 .MustAsync(async (name, cancellationToken) =>
                 !await _readRepository.ExistsAsync(
                     e => e.Name.ToLower() == name.ToLower(),

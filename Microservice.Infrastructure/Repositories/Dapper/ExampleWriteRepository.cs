@@ -6,16 +6,13 @@ using System.Data;
 
 namespace Microservice.Infrastructure.Repositories.Dapper
 {
-    // Microservice.Infrastructure/Repositories/Dapper/ExampleWriteRepository.cs
     public class ExampleWriteRepository : WriteRepository<Example>, IExampleWriteRepository
     {
         protected override string TableName => "examples";
 
-        // Constructor normal — DI lo usa cuando no hay UoW
         public ExampleWriteRepository(IDbConnectionFactory connectionFactory)
             : base(connectionFactory) { }
 
-        // Constructor para UoW — UnitOfWork lo usa internamente
         public ExampleWriteRepository(NpgsqlConnection connection, NpgsqlTransaction transaction)
             : base(connection, transaction) { }
 

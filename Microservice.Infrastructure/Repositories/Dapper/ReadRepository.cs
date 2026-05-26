@@ -6,7 +6,13 @@ using System.Data;
 
 namespace Microservice.Infrastructure.Repositories.Dapper
 {
-    // Microservice.Infrastructure/Repositories/Dapper/ReadRepository.cs
+    // ═══════════════════════════════════════════════════════════════════════
+    // AGENT — Dapper read base. Subclass and override TableName (snake_case).
+    // Generic queries provided: GetByIdAsync · GetByPublicIdAsync · GetAllAsync
+    //                           ExistsAsync · CountAsync
+    // Add specific queries in the subclass only when the generic ones don't fit.
+    // DefaultTypeMap.MatchNamesWithUnderscores = true → customer_name → CustomerName
+    // ═══════════════════════════════════════════════════════════════════════
     public abstract class ReadRepository<T>
         : IReadRepository<T> where T : BaseDomainModel
     {

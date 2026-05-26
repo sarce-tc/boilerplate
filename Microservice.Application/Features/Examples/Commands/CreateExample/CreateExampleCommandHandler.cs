@@ -7,26 +7,7 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.Examples.Commands.CreateExample
 {
-    /// <summary>
-    /// Use Case: Create a new Example record in the database.
-    /// 
-    /// When to use:
-    /// - When receiving a POST request to create a new resource from the API
-    /// - When an external system or AI agent needs to persist new data
-    /// - During bulk import operations where new entities must be created
-    /// 
-    /// Responsibilities:
-    /// - Map incoming request DTO to the domain entity
-    /// - Write the entity to the database using the write repository
-    /// - Commit changes through the Unit of Work pattern
-    /// - Return the ID of the newly created resource for reference
-    /// 
-    /// Integration with AI Agents:
-    /// - AI agents (Cursor AI, Antigravity, Claude) can use this handler to:
-    ///   * Generate and persist auto-generated content
-    ///   * Create records based on AI-generated suggestions
-    ///   * Store results from ML model predictions
-    /// </summary>
+    // EF write path: IWriteRepository<T>.AddAsync + AutoMapper + IUnitOfWork.SaveChangesAsync
     public class CreateExampleCommandHandler(
         IWriteRepository<Example> writeRepository,
         IUnitOfWork unitOfWork,

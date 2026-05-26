@@ -22,12 +22,6 @@ namespace Microservice.Application.Mapping
             CreateMap<Example, GetExampleWithProjectionDto>();
             CreateMap<Example, ExecuteSqlWithResultDto>();
 
-            CreateMap<Product, GetActiveProductsDto>()
-                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
-                .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price));
-
-            CreateMap<Product, GetAllProductsDto>();
-            CreateMap<Product, GetProductByIdDto>();
         }
     }
 }

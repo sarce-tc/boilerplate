@@ -1,7 +1,11 @@
 # Guía del agente — Boilerplate .NET 10 Microservices
 
 Instrucciones que el agente **debe seguir siempre** en este repositorio.
-Cuando una decisión no esté cubierta aquí, preguntar al piloto antes de implementar.
+
+Cuando una feature no encaja en los patrones documentados, el agente **no se bloquea**:
+toma el camino de desarrollo siguiendo las convenciones, patrones y librerías del stack.
+Solo pregunta al piloto si hay un cambio estructural, una librería nueva o dos enfoques
+válidos sin criterio claro para elegir. Ver sección **"Casos fuera del patrón"** en `/arquitectura`.
 
 ---
 
@@ -173,4 +177,19 @@ API             ← depende de Application (no de Infrastructure directamente)
 
 ## Regla general del agente
 
-> Antes de implementar cualquier patrón, librería o decisión que no esté explícitamente cubierta en esta guía, o cuando haya duda razonable sobre si es buena práctica en este stack, **preguntar al piloto** con una propuesta concreta y las alternativas relevantes.
+El agente opera en dos modos según el caso:
+
+**Patrón conocido** (cubierto por esta guía o por `/arquitectura`):
+→ Implementar directamente. No preguntar, no dudar.
+
+**Patrón nuevo o ambiguo** (no documentado):
+→ Tomar el camino de desarrollo de forma autónoma, respetando:
+  - Las convenciones de código del stack (C# 14, naming, async, DI).
+  - Las librerías ya presentes (nunca introducir una nueva sin consultar).
+  - Rendimiento y buenas prácticas del stack actual.
+  - El principio de menor sorpresa: el código nuevo debe leerse como el código existente.
+→ Preguntar al piloto **solo si**:
+  - La feature requiere una librería que no está en el stack.
+  - El diseño implica un cambio estructural (nueva capa, nuevo contrato, cambio de arquitectura).
+  - Hay dos enfoques válidos sin criterio claro para elegir entre ellos.
+  - Se detecta un riesgo de seguridad o rendimiento que el patrón existente no cubre.

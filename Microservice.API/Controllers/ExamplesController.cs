@@ -26,33 +26,9 @@ using Asp.Versioning;
 
 namespace Microservice.API.Controllers
 {
-    /// <summary>
-    /// Examples API Controller v1.0
-    /// 
-    /// Use Case: REST API endpoints for CRUD and query operations
-    /// 
-    /// Pattern: CQRS with MediatR
-    /// - Commands: Create, Update, Delete
-    /// - Queries: Get, Count, Exists
-    /// - Advanced: ExecuteSql, ExecuteStoredProcedure, ExecuteInTransaction
-    /// 
-    /// Versioning: Supports multiple versioning strategies
-    /// - URL Path: /api/v1/examples
-    /// - Query String: /api/examples?api-version=1.0
-    /// - Header: X-Version: 1.0
-    /// 
-    /// Error Handling: Uses Result Pattern with ToActionResult() extension
-    /// - Success: Returns data with appropriate HTTP status
-    /// - Failure: Returns RFC 7807 ProblemDetails
-    /// 
-    /// Features:
-    /// - Automatic HTTP status mapping from error codes
-    /// - Support for single and batch operations
-    /// - Raw SQL and stored procedure execution
-    /// - Pagination support
-    /// - Field projection for optimized responses
-    /// - API version reporting in headers
-    /// </summary>
+    // Reference controller demonstrating the full EF feature set:
+    // CRUD, batch ops, pagination, field projection, raw SQL, stored procedures, transactions.
+    // All actions delegate to MediatR and return result.ToActionResult().
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
     [ApiVersion("1.0")]
@@ -98,7 +74,7 @@ namespace Microservice.API.Controllers
         }
 
         /// <summary>
-        /// GET /api/examples?page=1&size=10
+        /// GET /api/examples?page=1&amp;size=10
         /// Get paginated Examples
         /// 
         /// Query Parameters:
@@ -123,8 +99,7 @@ namespace Microservice.API.Controllers
         /// GET /api/examples/all
         /// Get all Examples
         /// 
-        /// ⚠️ Warning: Returns all records (no pagination)
-        /// Use GetPaginated for large datasets
+        /// Note: Returns all records without pagination — use GetPaginated for large datasets
         /// 
         /// Returns: 200 OK with all Examples
         /// </summary>
@@ -221,7 +196,7 @@ namespace Microservice.API.Controllers
         /// Query Parameters:
         /// - sql: FormattableString SQL query (parameterized)
         /// 
-        /// ⚠️ Security: Only use pre-defined or AI-generated queries
+        /// Note: SQL is handler-supplied (not from query string), FormattableString-parameterized
         /// Use Case: Complex analytical queries
         /// 
         /// Returns: 200 OK with query results
@@ -349,7 +324,7 @@ namespace Microservice.API.Controllers
         /// 
         /// Body: { sql: "INSERT INTO ..." }
         /// 
-        /// ⚠️ Security: Only use FormattableString for parameterization
+        /// Note: Always use FormattableString in the command for safe parameterization
         /// Returns: 200 OK with affected row count
         /// </summary>
         [HttpPost("execute-sql")]

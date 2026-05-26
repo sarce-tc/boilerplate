@@ -2,6 +2,8 @@ using Microservice.Domain.Common;
 
 namespace Microservice.Domain.Entities
 {
+    // EF reference entity — demonstrates the EF Core path (IWriteRepository / IReadRepository / IUnitOfWork.SaveChangesAsync)
+    // Constructor validates Name and sets PublicId + timestamps.
     public class Example : BaseDomainModel
     {
         public string Name { get; set; } = string.Empty;

@@ -6,31 +6,7 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.Examples.Commands.DeleteExample
 {
-    /// <summary>
-    /// Use Case: Delete an existing Example record from the database.
-    /// 
-    /// When to use:
-    /// - When receiving a DELETE request to remove a resource
-    /// - When cleaning up obsolete or duplicate records
-    /// - When AI agents identify records that should be removed
-    /// - During data archival operations before permanent deletion
-    /// 
-    /// Responsibilities:
-    /// - Locate the entity to be deleted by ID
-    /// - Validate existence before deletion attempt
-    /// - Mark entity for deletion in the write repository
-    /// - Persist the deletion through Unit of Work
-    /// 
-    /// AI Agent Use Cases:
-    /// - AI systems can use this to:
-    ///   * Remove low-quality or irrelevant generated content
-    ///   * Clean up redundant records identified by ML analysis
-    ///   * Execute automated data retention policies
-    /// 
-    /// Important:
-    /// - Considers soft delete vs hard delete patterns
-    /// - May support logical deletion for audit trail requirements
-    /// </summary>
+    // EF delete path: IReadRepository<T>.GetEntityAsync + IWriteRepository<T>.Delete + IUnitOfWork.SaveChangesAsync
     public class DeleteExampleCommandHandler(
         IReadRepository<Example> readRepository,
         IWriteRepository<Example> writeRepository,
