@@ -1,10 +1,31 @@
 using Dapper;
 using Microservice.Application.Contracts.Persistence.Dapper;
+using Microservice.Application.DTOs.Orders;
 using Microservice.Domain.Entities;
 using Npgsql;
 
 namespace Microservice.Infrastructure.Repositories.Dapper;
 
+// ═══════════════════════════════════════════════════════════════════════════
+// AGENT ENTRY POINT — Dapper read path for Orders
+//
+// Inherited generic methods (ReadRepository<Order>):
+//   GetByIdAsync(int id)               → SELECT * FROM orders WHERE id = @Id
+//   GetByPublicIdAsync(Guid publicId)  → SELECT * FROM orders WHERE public_id = @PublicId
+//   GetAllAsync()                      → SELECT * FROM orders  (no pagination)
+//   ExistsAsync(int id)
+//   CountAsync()
+//
+// Specific methods (override base table name = "orders"):
+//   GetWithItemsAsync(Guid)   → single JOIN query, Dapper multi-map, splitOn: "id"
+//                               returns (Order?, IReadOnlyList<OrderItem>)
+//                               use this when you need items (detail view, RemoveOrderItem)
+//   GetPagedAsync(page, size) → QueryMultipleAsync: page rows + total count in one round-trip
+//                               returns (IReadOnlyList<OrderSummaryDto>, int totalCount)
+//
+// Snake_case mapping: DefaultTypeMap.MatchNamesWithUnderscores = true (set at startup)
+// → public_id → PublicId, item_count → ItemCount, etc.
+// ═══════════════════════════════════════════════════════════════════════════
 /// <summary>
 /// Dapper read repository for Orders.
 ///
@@ -70,5 +91,47 @@ public sealed class OrderReadRepository : ReadRepository<Order>, IOrderReadRepos
             order.RecalculateTotal(items);
 
         return (order, items.AsReadOnly());
+    }
+
+    /// <summary>
+    /// Single round-trip using <c>QueryMultipleAsync</c>:
+    /// — first result set  → page of <see cref="OrderSummaryDto"/> rows (with item_count aggregate)
+    /// — second result set → total row count for pagination metadata
+    ///
+    /// <c>item_count</c> (snake_case) maps to <c>ItemCount</c> via
+    /// <c>DefaultTypeMap.MatchNamesWithUnderscores = true</c>.
+    /// </summary>
+    public async Task<(IReadOnlyList<OrderSummaryDto> Orders, int TotalCount)> GetPagedAsync(
+        int page,
+        int pageSize,
+        CancellationToken ct = default)
+    {
+        using var conn = await GetConnectionAsync(ct);
+
+        const string sql = """
+            SELECT
+                o.public_id,
+                o.customer_name,
+                o.status,
+                o.total_amount,
+                o.created_at,
+                COUNT(i.id)::int AS item_count
+            FROM orders o
+            LEFT JOIN order_items i ON i.order_id = o.id
+            GROUP BY o.id
+            ORDER BY o.created_at DESC
+            LIMIT @PageSize OFFSET @Offset;
+
+            SELECT COUNT(*)::int FROM orders;
+            """;
+
+        using var multi = await conn.QueryMultipleAsync(
+            sql,
+            new { PageSize = pageSize, Offset = (page - 1) * pageSize });
+
+        var orders = (await multi.ReadAsync<OrderSummaryDto>()).ToList().AsReadOnly();
+        var total  = await multi.ReadSingleAsync<int>();
+
+        return (orders, total);
     }
 }

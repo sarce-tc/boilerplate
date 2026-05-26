@@ -5,6 +5,23 @@ using Npgsql;
 
 namespace Microservice.Infrastructure.Repositories.Dapper;
 
+// ═══════════════════════════════════════════════════════════════════════════
+// AGENT ENTRY POINT — Dapper write path for Orders
+//
+// Always called through IUnitOfWork.OrdersWrite (never injected directly).
+// Two constructors (DI standalone / UoW shared connection+transaction).
+//
+// Inherited + overridden:
+//   AddAsync(Order)      → INSERT orders RETURNING *
+//   UpdateAsync(Order)   → UPDATE orders SET customer_name, status, total_amount
+//   DeleteAsync(int id)  → DELETE orders WHERE id (base class, rarely used)
+//
+// Specific:
+//   AddItemAsync(OrderItem)  → INSERT order_items RETURNING *
+//   RemoveItemAsync(int id)  → DELETE order_items WHERE id
+//
+// All SQL uses snake_case columns. All calls pass _transaction for atomicity.
+// ═══════════════════════════════════════════════════════════════════════════
 /// <summary>
 /// Dapper write repository for the <c>orders</c> and <c>order_items</c> tables.
 ///
@@ -43,9 +60,10 @@ public sealed class OrderWriteRepository : WriteRepository<Order>, IOrderWriteRe
         var conn = await GetConnectionAsync(ct);
         const string sql = """
             UPDATE orders
-            SET status       = @Status,
-                total_amount = @TotalAmount,
-                updated_at   = NOW()
+            SET customer_name = @CustomerName,
+                status        = @Status,
+                total_amount  = @TotalAmount,
+                updated_at    = NOW()
             WHERE id = @Id
             RETURNING id, public_id, customer_name, status, total_amount, created_at, updated_at
             """;
@@ -65,5 +83,14 @@ public sealed class OrderWriteRepository : WriteRepository<Order>, IOrderWriteRe
             RETURNING id, public_id, order_id, product_name, quantity, unit_price, line_total, created_at, updated_at
             """;
         return await conn.QuerySingleAsync<OrderItem>(sql, item, _transaction);
+    }
+
+    public async Task RemoveItemAsync(int itemId, CancellationToken ct = default)
+    {
+        var conn = await GetConnectionAsync(ct);
+        await conn.ExecuteAsync(
+            "DELETE FROM order_items WHERE id = @Id",
+            new { Id = itemId },
+            _transaction);
     }
 }

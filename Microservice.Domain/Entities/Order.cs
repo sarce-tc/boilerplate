@@ -1,3 +1,22 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// AGENT ENTRY POINT — Domain aggregate root for Orders
+//
+// All business rules live HERE, not in handlers.
+// Key methods:
+//   Order.Create(customerName)                 → factory, sets Status = "Pending"
+//   order.Cancel()                             → DomainException if Completed
+//   order.Complete()                           → DomainException if Cancelled
+//   order.EnsureModifiable()                   → DomainException if not Pending
+//   order.UpdateCustomerName(name)             → calls EnsureModifiable
+//   order.AddItemForDapper(name,qty,price)     → calls EnsureModifiable, returns OrderItem
+//   order.RemoveItemForDapper(itemId, items)   → calls EnsureModifiable, returns item for DELETE
+//   order.RecalculateTotal(items)              → used after Dapper loads (no _items navigation)
+//
+// DomainException propagates to GlobalExceptionHandler → HTTP 409 Conflict.
+// Always call domain methods BEFORE BeginTransactionAsync (no rollback needed on rule failure).
+//
+// EF path: uses _items navigation + AddItem(). Dapper path: uses AddItemForDapper().
+// ═══════════════════════════════════════════════════════════════════════════
 using Microservice.Domain.Common;
 using Microservice.Domain.Exceptions;
 
@@ -63,6 +82,57 @@ namespace Microservice.Domain.Entities
             if (Status == OrderStatus.Cancelled)
                 throw new DomainException("Cannot complete a cancelled order.");
             Status = OrderStatus.Completed;
+        }
+
+        // ── Dapper write-path helpers ────────────────────────────────────────
+        // These methods are called BEFORE BeginTransactionAsync so a DomainException
+        // propagates to GlobalExceptionHandler without needing a rollback.
+
+        /// <summary>
+        /// Throws <see cref="DomainException"/> if the order is not in <c>Pending</c> status.
+        /// Call before any mutation that requires an open order.
+        /// </summary>
+        public void EnsureModifiable()
+        {
+            if (Status != OrderStatus.Pending)
+                throw new DomainException($"Cannot modify an order in '{Status}' status.");
+        }
+
+        /// <summary>
+        /// Changes the customer name. Order must be Pending.
+        /// </summary>
+        public void UpdateCustomerName(string customerName)
+        {
+            EnsureModifiable();
+            ArgumentException.ThrowIfNullOrWhiteSpace(customerName, nameof(customerName));
+            CustomerName = customerName.Trim();
+        }
+
+        /// <summary>
+        /// Dapper write path: creates an <see cref="OrderItem"/>, adds its LineTotal to
+        /// <see cref="TotalAmount"/>, and returns the item for persistence.
+        /// Order must be Pending.
+        /// </summary>
+        public OrderItem AddItemForDapper(string productName, int quantity, decimal unitPrice)
+        {
+            EnsureModifiable();
+            var item = OrderItem.CreateForOrder(Id, productName, quantity, unitPrice);
+            TotalAmount += item.LineTotal;
+            return item;
+        }
+
+        /// <summary>
+        /// Dapper write path: finds the item in <paramref name="currentItems"/>, subtracts
+        /// its LineTotal from <see cref="TotalAmount"/>, and returns it so the handler can
+        /// delete the DB row. Order must be Pending.
+        /// </summary>
+        public OrderItem RemoveItemForDapper(Guid itemPublicId, IReadOnlyList<OrderItem> currentItems)
+        {
+            EnsureModifiable();
+            var item = currentItems.FirstOrDefault(i => i.PublicId == itemPublicId)
+                ?? throw new DomainException($"Item '{itemPublicId}' does not belong to this order.");
+            TotalAmount -= item.LineTotal;
+            return item;
         }
     }
 
