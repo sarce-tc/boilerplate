@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // AGENT ENTRY POINT — Domain aggregate root for Orders
+// REFERENCE IMPLEMENTATION — Este aggregate es la plantilla de patrones del proyecto.
+// No degradar su claridad al refactorizar: otros aggregates aprenden de él.
 //
 // All business rules live HERE, not in handlers.
 // Key methods:

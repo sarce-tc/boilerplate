@@ -32,6 +32,10 @@ namespace Microservice.API.Controllers;
 [ApiVersion("1.0")]
 [AllowAnonymous]  // Remove and add [Authorize] once JWT is configured end-to-end
 [Tags("Orders")]
+// Controller binding patterns:
+//   A: route only       → new XCommand(publicId)                  — CancelOrder, CompleteOrder
+//   B: route + body     → command with { PublicId = publicId }     — UpdateOrder, AddOrderItem
+//   C: 201 Created      → result.ToActionResult(Status201Created)  — CreateOrder, AddOrderItem
 public sealed class OrdersController(IMediator mediator) : ControllerBase
 {
     /// <summary>

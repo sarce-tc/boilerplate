@@ -10,6 +10,7 @@ namespace Microservice.Infrastructure.Persistence
         public DbSet<Example>?   Examples   { get; set; }
         public DbSet<Order>?     Orders     { get; set; }
         public DbSet<OrderItem>? OrderItems { get; set; }
+        public DbSet<Customer>?  Customers  { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -58,6 +59,33 @@ namespace Microservice.Infrastructure.Persistence
                     .WithOne(i => i.Order)
                     .HasForeignKey(i => i.OrderId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ── Customers ─────────────────────────────────────────────────────
+            modelBuilder.Entity<Customer>(entity =>
+            {
+                entity.ToTable("customers");
+
+                entity.Property(c => c.Id).HasColumnName("id");
+                entity.Property(c => c.PublicId).HasColumnName("public_id");
+                entity.Property(c => c.CreatedAt).HasColumnName("created_at");
+                entity.Property(c => c.UpdatedAt).HasColumnName("updated_at");
+
+                entity.HasIndex(c => c.PublicId).IsUnique();
+
+                entity.Property(c => c.Name)
+                    .HasColumnName("name")
+                    .HasMaxLength(200)
+                    .IsRequired();
+
+                entity.Property(c => c.Email)
+                    .HasColumnName("email")
+                    .HasMaxLength(200)
+                    .IsRequired();
+
+                entity.Property(c => c.Phone)
+                    .HasColumnName("phone")
+                    .HasMaxLength(20);
             });
 
             // ── OrderItems ────────────────────────────────────────────────────

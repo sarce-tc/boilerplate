@@ -5,10 +5,16 @@ using Microservice.Application.DTOs.Orders;
 
 namespace Microservice.Application.Features.Orders.Queries.GetOrderById;
 
-/// <summary>
-/// Fetches an Order with its items via a single Dapper multi-map JOIN query.
-/// No EF context, no N+1 — one round-trip to the database.
-/// </summary>
+// ═══════════════════════════════════════════════════════════════════════
+// AGENT ENTRY POINT — Reference query handler (single entity with join)
+// REFERENCE IMPLEMENTATION — plantilla para query handlers con join y proyección a DTO.
+//
+// Query handler rules:
+//   - Inject IXReadRepository — never IUnitOfWork (queries are read-only, no TX)
+//   - No try-catch — exceptions propagate to GlobalExceptionHandler
+//   - Collections always use PagedResult<T> — see GetOrdersQueryHandler.cs
+//   - Project to DTO here, not in the repository
+// ═══════════════════════════════════════════════════════════════════════
 public sealed class GetOrderByIdQueryHandler(
     IOrderReadRepository orderReadRepo
 ) : IRequestHandler<GetOrderByIdQuery, Result<OrderDto>>

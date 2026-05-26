@@ -8,6 +8,7 @@ namespace Microservice.Infrastructure.Repositories.Dapper;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // AGENT ENTRY POINT — Dapper read path for Orders
+// REFERENCE IMPLEMENTATION — plantilla para todos los ReadRepository del proyecto.
 //
 // Inherited generic methods (ReadRepository<Order>):
 //   GetByIdAsync(int id)               → SELECT * FROM orders WHERE id = @Id

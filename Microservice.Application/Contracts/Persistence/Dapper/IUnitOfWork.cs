@@ -7,8 +7,9 @@
 //   3. Write → BeginTransactionAsync → try { repos } catch { Rollback; throw }
 //
 // Write repositories available:
-//   ExamplesWrite → AddAsync / UpdateAsync / DeleteAsync
-//   OrdersWrite   → AddAsync / UpdateAsync / AddItemAsync / RemoveItemAsync
+//   ExamplesWrite  → AddAsync / UpdateAsync / DeleteAsync
+//   OrdersWrite    → AddAsync / UpdateAsync / AddItemAsync / RemoveItemAsync
+//   CustomersWrite → AddAsync / UpdateAsync / DeleteAsync
 //
 // Implementation: Infrastructure/Repositories/Dapper/UnitOfWork.cs
 // ═══════════════════════════════════════════════════════════════════════════
@@ -16,8 +17,9 @@ namespace Microservice.Application.Contracts.Persistence.Dapper
 {
     public interface IUnitOfWork : IAsyncDisposable
     {
-        IExampleWriteRepository ExamplesWrite { get; }
-        IOrderWriteRepository   OrdersWrite   { get; }
+        IExampleWriteRepository  ExamplesWrite  { get; }
+        IOrderWriteRepository    OrdersWrite    { get; }
+        ICustomerWriteRepository CustomersWrite { get; }
 
         Task BeginTransactionAsync(CancellationToken ct = default);
         Task CommitAsync(CancellationToken ct = default);

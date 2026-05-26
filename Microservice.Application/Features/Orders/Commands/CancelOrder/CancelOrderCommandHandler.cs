@@ -13,6 +13,7 @@ namespace Microservice.Application.Features.Orders.Commands.CancelOrder;
 ///   <item>BEGIN → UPDATE orders SET status = 'Cancelled' → COMMIT.</item>
 /// </list>
 /// </summary>
+// REFERENCE IMPLEMENTATION — plantilla para command handlers con lógica de dominio.
 public sealed class CancelOrderCommandHandler(
     IOrderReadRepository orderReadRepo,
     IUnitOfWork          unitOfWork

@@ -7,6 +7,7 @@ namespace Microservice.Infrastructure.Repositories.Dapper;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // AGENT ENTRY POINT — Dapper write path for Orders
+// REFERENCE IMPLEMENTATION — plantilla para todos los WriteRepository del proyecto.
 //
 // Always called through IUnitOfWork.OrdersWrite (never injected directly).
 // Two constructors (DI standalone / UoW shared connection+transaction).

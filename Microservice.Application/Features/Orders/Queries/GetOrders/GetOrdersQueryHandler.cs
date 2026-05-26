@@ -6,13 +6,9 @@ using Microservice.Application.DTOs.Orders;
 
 namespace Microservice.Application.Features.Orders.Queries.GetOrders;
 
-/// <summary>
-/// Returns a paginated list of order summaries (no items detail).
-///
-/// Uses a single <c>QueryMultipleAsync</c> call — one round-trip returns both
-/// the page of rows and the total count.
-/// Read path: no UoW, no transaction.
-/// </summary>
+// AGENT ENTRY POINT — Reference paginated query handler
+// Pattern: GetPagedAsync → (IReadOnlyList<TDto>, int totalCount)
+//          → new PagedResult<T>(items, total, page, pageSize)
 public sealed class GetOrdersQueryHandler(
     IOrderReadRepository orderReadRepo
 ) : IRequestHandler<GetOrdersQuery, Result<PagedResult<OrderSummaryDto>>>
