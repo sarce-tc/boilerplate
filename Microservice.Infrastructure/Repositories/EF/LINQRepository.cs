@@ -23,9 +23,7 @@ namespace Microservice.Infrastructure.Repositories.EF
     //   Changes are staged until IUnitOfWork.SaveChangesAsync() is called
     // ═══════════════════════════════════════════════════════════════════════
     public class LINQRepository<T>(ExampleDbContext context) :
-        IReadRepository<T>,
-        IWriteRepository<T>,
-        IQueryRepository<T>
+        ILINQRepository<T>
         where T : BaseDomainModel
     {
         protected readonly ExampleDbContext _context = context;

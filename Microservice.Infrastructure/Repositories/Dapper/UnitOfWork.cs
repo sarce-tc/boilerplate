@@ -15,7 +15,7 @@ namespace Microservice.Infrastructure.Repositories.Dapper
     //   3. Add the property to IUnitOfWork interface.
     //   4. Register IMyEntityWriteRepository in InfrastuctureServiceRegistration.cs.
     // ═══════════════════════════════════════════════════════════════════════
-    public sealed class UnitOfWork(IDbConnectionFactory connectionFactory) : Application.Contracts.Persistence.Dapper.IUnitOfWork
+    public sealed class UnitOfWork(IDbConnectionFactory connectionFactory) : IUnitOfWork
     {
         private NpgsqlConnection?  _connection;
         private NpgsqlTransaction? _transaction;

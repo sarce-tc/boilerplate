@@ -4,8 +4,8 @@ using MediatR;
 using Microservice.API.Controllers;
 using Microservice.Application.Common.Results;
 using Microservice.Application.DTOs;
-using Microservice.Application.Features.Examples.Commands.CreateExample;
-using Microservice.Application.Features.Examples.Queries.GetExampleByPredicate;
+using Microservice.Application.Features.ExamplesEF.Commands.CreateExample;
+using Microservice.Application.Features.ExamplesEF.Queries.GetExampleByPredicate;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Microservice.Test.API.Controllers

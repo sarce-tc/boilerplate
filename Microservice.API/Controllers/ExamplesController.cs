@@ -2,24 +2,27 @@ using MediatR;
 using Microservice.API.Extensions;
 using Microservice.Application.Common.Results;
 using Microservice.Application.DTOs;
-using Microservice.Application.Features.Examples.Commands.CreateExample;
-using Microservice.Application.Features.Examples.Commands.DeleteExample;
-using Microservice.Application.Features.Examples.Commands.DeleteManyExamples;
-using Microservice.Application.Features.Examples.Commands.ExecuteInTransaction;
-using Microservice.Application.Features.Examples.Commands.ExecuteSql;
-using Microservice.Application.Features.Examples.Commands.ExecuteStoredProcedure;
-using Microservice.Application.Features.Examples.Commands.UpdateExample;
-using Microservice.Application.Features.Examples.Commands.UpdateExampleFields;
-using Microservice.Application.Features.Examples.Commands.UpdateManyExamples;
-using Microservice.Application.Features.Examples.Queries.CountExamples;
-using Microservice.Application.Features.Examples.Queries.ExecuteSqlWithResult;
-using Microservice.Application.Features.Examples.Queries.ExistsExample;
-using Microservice.Application.Features.Examples.Queries.GetAllExample;
-using Microservice.Application.Features.Examples.Queries.GetExampleByPredicate;
-using Microservice.Application.Features.Examples.Queries.GetExamplesFromSql;
-using Microservice.Application.Features.Examples.Queries.GetExamplesPaginated;
-using Microservice.Application.Features.Examples.Queries.GetExamplesWithProjection;
-using Microservice.Application.Features.Examples.Queries.GetExampleWithProjection;
+using Microservice.Application.Features.ExamplesEF.Commands.CreateExample;
+using Microservice.Application.Features.ExamplesEF.Commands.DeleteExample;
+using Microservice.Application.Features.ExamplesEF.Commands.DeleteManyExamples;
+using Microservice.Application.Features.ExamplesEF.Commands.ExecuteInTransaction;
+using Microservice.Application.Features.ExamplesEF.Commands.ExecuteSql;
+using Microservice.Application.Features.ExamplesEF.Commands.ExecuteStoredProcedure;
+using Microservice.Application.Features.ExamplesEF.Commands.UpdateExample;
+using Microservice.Application.Features.ExamplesEF.Commands.UpdateExampleFields;
+using Microservice.Application.Features.ExamplesEF.Commands.UpdateManyExamples;
+using Microservice.Application.Features.ExamplesEF.Queries.CountExamples;
+using Microservice.Application.Features.ExamplesEF.Queries.ExecuteSqlWithResult;
+using Microservice.Application.Features.ExamplesEF.Queries.ExistsExample;
+using Microservice.Application.Features.ExamplesEF.Queries.GetAllExample;
+using Microservice.Application.Features.ExamplesEF.Queries.GetExampleByPredicate;
+using Microservice.Application.Features.ExamplesEF.Queries.GetExamplesFromSql;
+using Microservice.Application.Features.ExamplesEF.Queries.GetExamplesPaginated;
+using Microservice.Application.Features.ExamplesEF.Queries.GetExampleItems;
+using Microservice.Application.Features.ExamplesEF.Queries.GetExampleItemByPublicId;
+using Microservice.Application.Features.ExamplesEF.Queries.GetExampleWithItems;
+using Microservice.Application.Features.ExamplesEF.Queries.GetExamplesWithProjection;
+using Microservice.Application.Features.ExamplesEF.Queries.GetExampleWithProjection;
 using Microservice.Application.Models;
 using Microsoft.AspNetCore.Mvc;
 using Asp.Versioning;
@@ -164,6 +167,66 @@ namespace Microservice.API.Controllers
             CancellationToken cancellationToken = default)
         {
             var query = new GetExamplesWithProjectionQuery();
+            var result = await _mediator.Send(query, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// GET /api/examples/{publicId}/with-items
+        /// Get Example with its child items collection
+        ///
+        /// Use Case: Detail view when items are needed alongside the aggregate root.
+        ///
+        /// Returns: 200 OK with Example + Items
+        /// Error: 404 Not Found if not exists
+        /// </summary>
+        [HttpGet("{publicId:guid}/with-items")]
+        [ProducesResponseType(typeof(GetExampleWithItemsDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetExampleWithItems(
+            Guid publicId,
+            CancellationToken cancellationToken)
+        {
+            var query = new GetExampleWithItemsQuery(publicId);
+            var result = await _mediator.Send(query, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// GET /api/examples/{publicId}/items
+        /// Get all items belonging to an Example
+        ///
+        /// Returns: 200 OK with items collection
+        /// Error: 404 Not Found if the parent Example does not exist
+        /// </summary>
+        [HttpGet("{publicId:guid}/items")]
+        [ProducesResponseType(typeof(IEnumerable<GetExampleItemDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetExampleItems(
+            Guid publicId,
+            CancellationToken cancellationToken)
+        {
+            var query = new GetExampleItemsQuery(publicId);
+            var result = await _mediator.Send(query, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// GET /api/examples/{publicId}/items/{itemPublicId}
+        /// Get a single item by its PublicId within an Example
+        ///
+        /// Returns: 200 OK with item data
+        /// Error: 404 Not Found if the Example or the item does not exist
+        /// </summary>
+        [HttpGet("{publicId:guid}/items/{itemPublicId:guid}")]
+        [ProducesResponseType(typeof(GetExampleItemDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetExampleItemByPublicId(
+            Guid publicId,
+            Guid itemPublicId,
+            CancellationToken cancellationToken)
+        {
+            var query = new GetExampleItemByPublicIdQuery(publicId, itemPublicId);
             var result = await _mediator.Send(query, cancellationToken);
             return result.ToActionResult();
         }

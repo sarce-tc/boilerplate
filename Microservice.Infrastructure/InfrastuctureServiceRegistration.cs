@@ -53,21 +53,23 @@ namespace Microservice.Infrastructure
             services.AddScoped(typeof(ISqlCommandRepository<>),  typeof(SqlRepository<>));
             services.AddScoped(typeof(ISqlRepository<>),         typeof(SqlRepository<>));
 
-            // EF UoW (delegates to DbContext)
-            services.AddScoped<Application.Contracts.Persistence.IUnitOfWork>(sp =>
-                sp.GetRequiredService<ExampleDbContext>());
+            // Example aggregate — EF repos
+            services.AddScoped<Application.Contracts.Persistence.EF.IExampleReadRepository, Repositories.EF.ExampleReadRepository>();
+
+            // EF UoW
+            services.AddScoped<Application.Contracts.Persistence.EF.IUnitOfWork, Repositories.EF.UnitOfWork>();
 
             // ── Dapper ────────────────────────────────────────────────────────
             Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true; // snake_case → PascalCase
 
             services.AddSingleton<IDbConnectionFactory, SqlConnectionFactory>();
 
-            // Example aggregate
-            services.AddScoped<IExampleReadRepository,  ExampleReadRepository>();
-            services.AddScoped<IExampleWriteRepository, ExampleWriteRepository>();
+            // Example aggregate — Dapper repos
+            services.AddScoped<Application.Contracts.Persistence.Dapper.IExampleReadRepository,  Repositories.Dapper.ExampleReadRepository>();
+            services.AddScoped<Application.Contracts.Persistence.Dapper.IExampleWriteRepository, Repositories.Dapper.ExampleWriteRepository>();
 
             // Dapper UoW
-            services.AddScoped<Application.Contracts.Persistence.Dapper.IUnitOfWork, UnitOfWork>();
+            services.AddScoped<Application.Contracts.Persistence.Dapper.IUnitOfWork, Repositories.Dapper.UnitOfWork>();
 
             // ── Background Jobs ───────────────────────────────────────────────
             // Use Channel.CreateBounded<>(capacity) instead for backpressure.
