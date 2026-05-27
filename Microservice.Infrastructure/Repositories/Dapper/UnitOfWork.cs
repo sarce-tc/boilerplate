@@ -21,17 +21,9 @@ namespace Microservice.Infrastructure.Repositories.Dapper
         private NpgsqlTransaction? _transaction;
 
         private ExampleWriteRepository?  _exampleWrite;
-        private OrderWriteRepository?    _orderWrite;
-        private CustomerWriteRepository? _customerWrite;
 
         public IExampleWriteRepository ExamplesWrite =>
             _exampleWrite ??= new ExampleWriteRepository(_connection!, _transaction!);
-
-        public IOrderWriteRepository OrdersWrite =>
-            _orderWrite ??= new OrderWriteRepository(_connection!, _transaction!);
-
-        public ICustomerWriteRepository CustomersWrite =>
-            _customerWrite ??= new CustomerWriteRepository(_connection!, _transaction!);
 
         public async Task BeginTransactionAsync(CancellationToken ct = default)
         {

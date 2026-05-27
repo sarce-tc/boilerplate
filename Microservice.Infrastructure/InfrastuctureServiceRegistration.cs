@@ -66,14 +66,6 @@ namespace Microservice.Infrastructure
             services.AddScoped<IExampleReadRepository,  ExampleReadRepository>();
             services.AddScoped<IExampleWriteRepository, ExampleWriteRepository>();
 
-            // Order aggregate
-            services.AddScoped<IOrderReadRepository,  OrderReadRepository>();
-            services.AddScoped<IOrderWriteRepository, OrderWriteRepository>();
-
-            // Customer aggregate
-            services.AddScoped<ICustomerReadRepository,  CustomerReadRepository>();
-            services.AddScoped<ICustomerWriteRepository, CustomerWriteRepository>();
-
             // Dapper UoW
             services.AddScoped<Application.Contracts.Persistence.Dapper.IUnitOfWork, UnitOfWork>();
 
