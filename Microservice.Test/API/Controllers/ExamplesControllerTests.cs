@@ -17,12 +17,12 @@ namespace Microservice.Test.API.Controllers
     public class ExamplesControllerTests
     {
         private readonly Mock<IMediator> _mockMediator;
-        private readonly ExamplesController _controller;
+        private readonly ExamplesEFController _controller;
 
         public ExamplesControllerTests()
         {
             _mockMediator = new Mock<IMediator>();
-            _controller = new ExamplesController(_mockMediator.Object);
+            _controller = new ExamplesEFController(_mockMediator.Object);
         }
 
         [Fact]

@@ -9,7 +9,7 @@ using Microservice.Domain.Entities;
 namespace Microservice.Application.Features.ExamplesEF.Queries.GetExamplesPaginated
 {
     // PATRÓN — Obtener colección paginada (offset) con metadatos para navegación del cliente.
-    // ── Decisiones de diseño que debe replicar para nuevas entidades ─────────
+    // ── Decisiones de diseño de referencia ────────────────────────────────────
     //   · Generic-first: inyectar IReadRepository<T> directamente porque GetListPaginatedAsync
     //     existe en la superficie genérica.
     //   · GetListPaginatedAsync emite COUNT(*) + SELECT LIMIT/OFFSET en dos queries.

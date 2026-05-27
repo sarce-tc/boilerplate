@@ -6,7 +6,7 @@ using Microservice.Domain.Entities;
 namespace Microservice.Application.Features.ExamplesEF.Commands.UpdateExample;
 
 // PATRÓN — Actualizar aggregate completo (scalar + gestión de hijos) con change tracking.
-// ── Decisiones de diseño que debe replicar para nuevas entidades ─────────
+// ── Decisiones de diseño de referencia ────────────────────────────────────
 //   · includeProperties:[e => e.Items] — cargar la colección hija es obligatorio cuando
 //     el handler puede añadir, quitar o transicionar hijos, para que:
 //       a) los domain methods puedan validar invariantes sobre el estado actual de la colección.

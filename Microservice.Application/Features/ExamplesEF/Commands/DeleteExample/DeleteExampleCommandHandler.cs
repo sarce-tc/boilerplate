@@ -6,7 +6,7 @@ using Microservice.Domain.Entities;
 namespace Microservice.Application.Features.ExamplesEF.Commands.DeleteExample;
 
 // PATRÓN — Eliminar un aggregate individual con verificación de existencia previa.
-// ── Decisiones de diseño que debe replicar para nuevas entidades ─────────
+// ── Decisiones de diseño de referencia ────────────────────────────────────
 //   · GetEntityAsync sin includeProperties — los hijos no necesitan cargarse; el FK CASCADE
 //     configurado en OnModelCreating (ExampleDbContext) los elimina a nivel de base de datos.
 //   · La entidad se carga para poder devolver NotFound explícito si no existe.

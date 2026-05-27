@@ -7,17 +7,17 @@ using Microservice.Domain.Entities;
 namespace Microservice.Application.Features.ExamplesEF.Commands.CreateExample
 {
     // PATRÓN — Crear un aggregate raíz con colección de hijos inicial (opcional).
-    // ── Decisiones de diseño que debe replicar para nuevas entidades ─────────
+    // ── Decisiones de diseño de referencia ────────────────────────────────────
     //   · AutoMapper crea el root via constructor de dominio (no setters directos).
     //   · Los hijos se añaden exclusivamente a través de domain methods del aggregate
     //     (entity.AddItem), nunca instanciando la entidad hija directamente.
     //     Esto garantiza que las invariantes del dominio se ejecuten siempre.
     //   · Generic-first: se usa IUnitOfWork.ExamplesWrite (aggregate-specific) porque
-    //     AddAsync existe en la superficie genérica. Para nuevas entidades sin métodos
-    //     específicos, usar IUnitOfWork.WriteRepository directamente.
+    //     AddAsync existe en la superficie genérica. Para aggregates sin métodos de
+    //     escritura específicos, usar IUnitOfWork.WriteRepository directamente.
     //   · Un único SaveChangesAsync al final persiste root + hijos en una TX implícita.
     // ── Cuándo aplicar este patrón ───────────────────────────────────────────
-    //   Endpoint POST que recibe el aggregate completo y opcionalmente sus hijos en el body.
+    //   Endpoint POST que crea un aggregate completo, con o sin hijos en el mismo request.
     public sealed class CreateExampleCommandHandler(
         IUnitOfWork unitOfWork,
         IMapper mapper

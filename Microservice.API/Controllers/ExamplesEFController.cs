@@ -1,6 +1,6 @@
+using Asp.Versioning;
 using MediatR;
 using Microservice.API.Extensions;
-using Microservice.Application.Common.Results;
 using Microservice.Application.DTOs;
 using Microservice.Application.Features.ExamplesEF.Commands.CreateExample;
 using Microservice.Application.Features.ExamplesEF.Commands.DeleteExample;
@@ -16,16 +16,15 @@ using Microservice.Application.Features.ExamplesEF.Queries.ExecuteSqlWithResult;
 using Microservice.Application.Features.ExamplesEF.Queries.ExistsExample;
 using Microservice.Application.Features.ExamplesEF.Queries.GetAllExample;
 using Microservice.Application.Features.ExamplesEF.Queries.GetExampleByPredicate;
+using Microservice.Application.Features.ExamplesEF.Queries.GetExampleItemByPublicId;
+using Microservice.Application.Features.ExamplesEF.Queries.GetExampleItems;
 using Microservice.Application.Features.ExamplesEF.Queries.GetExamplesFromSql;
 using Microservice.Application.Features.ExamplesEF.Queries.GetExamplesPaginated;
-using Microservice.Application.Features.ExamplesEF.Queries.GetExampleItems;
-using Microservice.Application.Features.ExamplesEF.Queries.GetExampleItemByPublicId;
-using Microservice.Application.Features.ExamplesEF.Queries.GetExampleWithItems;
 using Microservice.Application.Features.ExamplesEF.Queries.GetExamplesWithProjection;
+using Microservice.Application.Features.ExamplesEF.Queries.GetExampleWithItems;
 using Microservice.Application.Features.ExamplesEF.Queries.GetExampleWithProjection;
 using Microservice.Application.Models;
 using Microsoft.AspNetCore.Mvc;
-using Asp.Versioning;
 
 namespace Microservice.API.Controllers
 {
@@ -35,7 +34,7 @@ namespace Microservice.API.Controllers
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
     [ApiVersion("1.0")]
-    public class ExamplesController(IMediator mediator) : ControllerBase
+    public class ExamplesEFController(IMediator mediator) : ControllerBase
     {
         private readonly IMediator _mediator = mediator;
 

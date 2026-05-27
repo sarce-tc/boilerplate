@@ -7,7 +7,7 @@ using System.Linq.Expressions;
 namespace Microservice.Application.Features.ExamplesEF.Commands.UpdateExampleFields;
 
 // PATRÓN — Actualizar uno o varios campos scalares del aggregate con semántica PATCH (mínimo SQL).
-// ── Decisiones de diseño que debe replicar para nuevas entidades ─────────
+// ── Decisiones de diseño de referencia ────────────────────────────────────
 //   · disableTracking:true (default) — no se necesita tracking completo porque no hay hijos.
 //   · UpdateFields(entity, [x => x.Campo1, x => x.Campo2]) hace Attach + marca solo esas
 //     columnas como Modified; el UPDATE resultante toca únicamente esas columnas.

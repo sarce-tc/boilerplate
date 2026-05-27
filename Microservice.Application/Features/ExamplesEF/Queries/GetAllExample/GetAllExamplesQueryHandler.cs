@@ -8,7 +8,7 @@ using Microservice.Domain.Entities;
 namespace Microservice.Application.Features.ExamplesEF.Queries.GetAllExample
 {
     // PATRÓN — Obtener colección completa sin paginación con proyección a DTO.
-    // ── Decisiones de diseño que debe replicar para nuevas entidades ─────────
+    // ── Decisiones de diseño de referencia ────────────────────────────────────
     //   · Generic-first: inyectar IReadRepository<T> directamente porque GetListAsync
     //     existe en la superficie genérica.
     //   · Sin paginación — solo aplicar cuando la colección está acotada por diseño
@@ -16,7 +16,7 @@ namespace Microservice.Application.Features.ExamplesEF.Queries.GetAllExample
     //     GetExamplesPaginatedQueryHandler (ver §7 CLAUDE.md: paginación obligatoria).
     //   · GetListAsync con predicado y disableTracking:true (default) — queries de lectura
     //     pura nunca necesitan tracking.
-    public class GetAllExamplesQueryHandler(
+    public sealed class GetAllExamplesQueryHandler(
         IReadRepository<Example> readRepository,
         IMapper mapper
         ) : IRequestHandler<GetAllExamplesQuery, Result<IEnumerable<GetAllExamplesDto>>>

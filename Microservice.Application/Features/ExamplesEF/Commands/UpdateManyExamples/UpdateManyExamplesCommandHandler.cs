@@ -6,7 +6,7 @@ using Microservice.Domain.Entities;
 namespace Microservice.Application.Features.ExamplesEF.Commands.UpdateManyExamples;
 
 // PATRÓN — Actualizar múltiples registros en batch sin materializar entidades individualmente.
-// ── Decisiones de diseño que debe replicar para nuevas entidades ─────────
+// ── Decisiones de diseño de referencia ────────────────────────────────────
 //   · Generic-first: se usa IUnitOfWork.WriteRepository (genérico) porque UpdateManyAsync
 //     existe en la superficie genérica. No se necesita IExampleWriteRepository.
 //   · UpdateManyAsync recibe: (1) un filtro que acota el IQueryable, (2) una acción que
