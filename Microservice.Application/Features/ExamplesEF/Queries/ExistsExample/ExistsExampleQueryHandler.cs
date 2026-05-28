@@ -5,8 +5,9 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.ExistsExample;
 // PATRÓN — Verificar existencia con generic-first.
-// · IReadRepository<T>.ExistsAsync — emite SELECT 1 WHERE ...; no carga la entidad.
-// · Preferir sobre GetEntityAsync + null-check cuando solo se necesita saber si existe.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · readRepository — IReadRepository<Example> (Application.Contracts.Persistence.EF): ejecuta ExistsAsync
+//     que emite SELECT 1 WHERE predicado sin materializar la entidad, más eficiente que GetEntityAsync + null-check.
 public sealed class ExistsExampleQueryHandler(
     IReadRepository<Example> readRepository
     ) : IRequestHandler<ExistsExampleQuery, Result<bool>>

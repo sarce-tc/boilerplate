@@ -29,15 +29,17 @@ using Microservice.Application.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Microservice.API.Controllers;
-// Reference controller demonstrating the full EF feature set:
-// CRUD, batch ops, pagination, field projection, raw SQL, stored procedures, transactions.
-// All actions delegate to MediatR and return result.ToActionResult().
+// Controlador EF Core del aggregate Example — expone el conjunto completo de operaciones:
+// CRUD, batch, paginación, proyección de campos, SQL directo, stored procedures y transacciones.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · mediator — IMediator (MediatR): despacha queries y commands al handler registrado
+//     en el pipeline; desacopla el controller de la capa Application y habilita
+//     el flujo de behaviors (validación, logging, caching).
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [ApiVersion("1.0")]
 public class ExamplesEFController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator = mediator;
 
     /// <summary>
     /// POST /api/examples
@@ -53,7 +55,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         [FromBody] CreateExampleCommand request,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(request, cancellationToken);
+        var result = await mediator.Send(request, cancellationToken);
         return result.ToActionResult(StatusCodes.Status201Created);
     }
 
@@ -72,7 +74,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var query = new GetExampleByPredicateQuery(publicId);
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(query, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -94,7 +96,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var query = new GetExamplesPaginatedQuery(page, size);
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(query, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -112,7 +114,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var query = new GetAllExamplesQuery();
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(query, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -130,7 +132,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var query = new CountExamplesQuery();
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(query, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -148,7 +150,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var query = new ExistsExampleQuery(publicId);
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(query, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -167,7 +169,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var query = new GetExamplesWithProjectionQuery();
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(query, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -188,7 +190,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var query = new GetExampleWithItemsQuery(publicId);
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(query, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -207,7 +209,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var query = new GetExampleItemsQuery(publicId);
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(query, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -227,7 +229,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var query = new GetExampleItemByPublicIdQuery(publicId, itemPublicId);
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(query, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -248,7 +250,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var query = new GetExampleWithProjectionQuery(publicId);
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(query, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -271,7 +273,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var query = new GetExamplesFromSqlQuery(sql ?? string.Empty);
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(query, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -294,7 +296,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new UpdateExampleCommand(publicId, request?.Name, request?.Description);
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await mediator.Send(command, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -318,7 +320,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new UpdateExampleFieldsCommand(publicId, request?.Name, request?.Description);
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await mediator.Send(command, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -338,7 +340,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new UpdateManyExamplesCommand(publicIds);
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await mediator.Send(command, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -357,7 +359,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new DeleteExampleCommand(publicId);
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await mediator.Send(command, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -377,7 +379,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new DeleteManyExamplesCommand(publicIds);
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await mediator.Send(command, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -398,7 +400,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var query = new GetExampleSummaryQuery(publicId);
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(query, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -421,7 +423,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new ActivateExampleCommand(publicId);
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await mediator.Send(command, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -440,7 +442,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         [FromBody] ExecuteSqlCommand request,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(request, cancellationToken);
+        var result = await mediator.Send(request, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -459,7 +461,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         [FromBody] ExecuteStoredProcedureCommand request,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(request, cancellationToken);
+        var result = await mediator.Send(request, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -477,7 +479,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         [FromBody] ExecuteSqlWithResultQuery request,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(request, cancellationToken);
+        var result = await mediator.Send(request, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -495,7 +497,7 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         [FromBody] ExecuteInTransactionCommand request,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(request, cancellationToken);
+        var result = await mediator.Send(request, cancellationToken);
         return result.ToActionResult();
     }
 }

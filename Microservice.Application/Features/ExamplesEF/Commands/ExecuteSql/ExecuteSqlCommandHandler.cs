@@ -5,9 +5,10 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.ExamplesEF.Commands.ExecuteSql;
 // PATRÓN — Ejecutar un comando SQL arbitrario (INSERT/UPDATE/DELETE) desde la capa de aplicación.
-// · ISqlCommandRepository<T>.ExecuteSqlAsync ejecuta FormattableString parametrizado — nunca string crudo.
-// · Usar cuando EF change-tracking es innecesario y se necesita SQL directo por rendimiento o complejidad.
-// · Para operaciones de escritura con invariantes de dominio, usar UoW + entidades en lugar de SQL crudo.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · sqlCommandRepository — ISqlCommandRepository<Example> (Application.Contracts.Persistence.EF): ejecuta
+//     el FormattableString parametrizado del command mediante ExecuteSqlAsync sin involucrar el ChangeTracker,
+//     apropiado para operaciones de escritura donde el rendimiento importa y no hay invariantes de dominio.
 public sealed class ExecuteSqlCommandHandler(
     ISqlCommandRepository<Example> sqlCommandRepository
     ) : IRequestHandler<ExecuteSqlCommand, Result<int>>

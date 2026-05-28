@@ -3,9 +3,10 @@ using Microservice.Application.Contracts.Persistence.EF;
 using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.ExamplesEF.Commands.CreateExample;
-// Invoked by ValidationBehaviour before the handler; failures → Result.Failure (not exception)
-// Name: required, unique (async DB check), max 200 chars. Description: optional, max 1000 chars.
-// Items: optional collection; each item validated for Label (required, max 150) and Quantity (> 0).
+// Valida CreateExampleCommand antes de que llegue al handler mediante el pipeline de MediatR.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · readRepository — IReadRepository<Example> (Application.Contracts.Persistence.EF): ejecuta la
+//     comprobación asíncrona de unicidad de nombre (ExistsAsync) sin cargar la entidad completa.
 public sealed class CreateExampleCommandValidator : AbstractValidator<CreateExampleCommand>
 {
     public CreateExampleCommandValidator(IReadRepository<Example> readRepository)

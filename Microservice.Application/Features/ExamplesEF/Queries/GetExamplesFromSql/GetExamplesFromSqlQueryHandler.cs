@@ -7,9 +7,11 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.GetExamplesFromSql;
 // PATRÓN — Query SQL hardcoded en el handler cuando la lógica no se puede expresar con LINQ.
-// · ISqlQueryRepository<T>.FromSqlAsync con FormattableString definido en el handler — no concatenar strings.
-// · Diferencia con ExecuteSqlWithResult: el SQL lo define el handler (no el caller), garantizando seguridad.
-// · Usar cuando la query analítica es fija y conocida en tiempo de diseño.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · sqlQueryRepository — ISqlQueryRepository<Example> (Application.Contracts.Persistence.EF): ejecuta el
+//     FormattableString definido en el handler (no por el caller) mediante FromSqlAsync, garantizando que
+//     el SQL es seguro y conocido en tiempo de diseño.
+//   · mapper — IMapper (AutoMapper): proyecta IEnumerable<Example> → IEnumerable<GetExamplesFromSqlDto>.
 public sealed class GetExamplesFromSqlQueryHandler(
     ISqlQueryRepository<Example> sqlQueryRepository,
     IMapper mapper

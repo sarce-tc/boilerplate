@@ -6,6 +6,11 @@ using Microservice.Domain.Entities;
 namespace Microservice.Application.Features.ExamplesEF.Commands.UpdateExample;
 
 // PATRÓN — Actualizar aggregate completo (scalar + gestión de hijos) con change tracking.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · readRepository — IReadRepository<Example> (Application.Contracts.Persistence.EF): carga el aggregate
+//     con disableTracking:false e includeProperties Items para que EF registre cambios en hijos automáticamente.
+//   · unitOfWork — IUnitOfWork (Application.Contracts.Persistence.EF): expone ExamplesWrite.Update para
+//     marcar el aggregate como modificado y SaveChangesAsync para confirmar scalars + hijos en una TX implícita.
 // ── Decisiones de diseño de referencia ────────────────────────────────────
 //   · includeProperties:[e => e.Items] — cargar la colección hija es obligatorio cuando
 //     el handler puede añadir, quitar o transicionar hijos, para que:

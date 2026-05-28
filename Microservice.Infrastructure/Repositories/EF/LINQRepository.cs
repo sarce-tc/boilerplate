@@ -20,6 +20,32 @@ namespace Microservice.Infrastructure.Repositories.EF;
 //   disableTracking=true (default) → AsNoTracking(); set false when updating
 //   UpdateFields → marks only specified properties Modified (PATCH semantics)
 //   Changes are staged until IUnitOfWork.SaveChangesAsync() is called
+//
+// ── GENERIC-FIRST — evaluar en este orden antes de crear métodos específicos ──
+//   Obtener entidad por predicado
+//     → GetEntityAsync(predicate)
+//   Obtener entidad con hijos (eager-loading)
+//     → GetEntityAsync(predicate, includeProperties:[e => e.Children])
+//   Obtener colección con filtro / orden
+//     → GetListAsync(predicate, orderBy)
+//   Proyección directa a DTO sin AutoMapper
+//     → IQueryRepository<T>.GetListAsync<TResult>(selector, predicate)
+//     → IQueryRepository<T>.GetEntityAsync<TResult>(selector, predicate)
+//   Colección paginada con metadatos de navegación
+//     → GetListPaginatedAsync(currentPage, pageSize, predicate)
+//   Verificar existencia / contar
+//     → ExistsAsync(predicate) · CountAsync()
+//   Bulk delete sin cargar entidades
+//     → DeleteManyAsync(predicate)
+//   Bulk update sin cargar entidades
+//     → UpdateManyAsync(filter, updateAction)
+//   Escribir (ADD / UPDATE / DELETE unitario, change-tracked)
+//     → IUnitOfWork.ExamplesWrite.AddAsync / Update / UpdateFields / Delete
+//   ── Crear método específico SOLO si el caso no cabe en la superficie genérica ──
+//   ILike · JOIN complejo · filtro que no existe arriba
+//     → Agregar en IMyEntityReadRepository y MyEntityReadRepository
+//   Escritura con SQL propio (RETURNING, lógica especial de dominio)
+//     → Agregar en IMyEntityWriteRepository y MyEntityWriteRepository
 // ═══════════════════════════════════════════════════════════════════════
 public class LINQRepository<T>(ExampleDbContext context) :
     ILINQRepository<T>

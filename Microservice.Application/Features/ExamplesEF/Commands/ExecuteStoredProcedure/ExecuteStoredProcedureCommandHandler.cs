@@ -5,8 +5,10 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.ExamplesEF.Commands.ExecuteStoredProcedure;
 // PATRÓN — Invocar un stored procedure de base de datos.
-// · ISqlCommandRepository<T>.ExecuteStoredProcedureAsync delega la ejecución al SP sin materializar entidades.
-// · Usar cuando la lógica de negocio compleja ya existe en el SP y no se puede/quiere reescribir en el dominio.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · sqlCommandRepository — ISqlCommandRepository<Example> (Application.Contracts.Persistence.EF): delega la
+//     ejecución del SP mediante ExecuteStoredProcedureAsync sin materializar entidades ni invocar el ChangeTracker,
+//     apropiado cuando la lógica de negocio compleja reside en el SP y no se reescribe en el dominio.
 public sealed class ExecuteStoredProcedureCommandHandler(
     ISqlCommandRepository<Example> sqlCommandRepository
     ) : IRequestHandler<ExecuteStoredProcedureCommand, Result<int>>

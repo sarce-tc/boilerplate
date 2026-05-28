@@ -3,8 +3,7 @@ using Microservice.Application.Common.Results;
 
 namespace Microservice.Application.Features.ExamplesEF.Commands.ActivateExample;
 
-/// <summary>
-/// Transitions an <c>Example</c> from <c>Inactive</c> to <c>Active</c> state.
-/// Returns the <see cref="Guid"/> of the reactivated aggregate.
-/// </summary>
+// PATRÓN — Transiciona un aggregate Example del estado Inactive al estado Active.
+//   PublicId identifica el aggregate a reactivar.
+//   Contrato de respuesta: Result<Guid> con el PublicId del aggregate activado, o HTTP 409 si ya está activo.
 public record ActivateExampleCommand(Guid PublicId) : IRequest<Result<Guid>>;

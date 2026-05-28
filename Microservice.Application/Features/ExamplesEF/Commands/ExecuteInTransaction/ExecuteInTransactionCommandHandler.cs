@@ -5,9 +5,10 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.ExamplesEF.Commands.ExecuteInTransaction;
 // PATRÓN — Ejecutar múltiples operaciones SQL en una sola transacción atómica.
-// · ISqlRepository<T>.ExecuteInTransactionAsync envuelve el bloque en BEGIN/COMMIT/ROLLBACK.
-// · Usar cuando se necesitan varios ExecuteSqlAsync dentro de la misma transacción sin UoW.
-// · Siempre usar FormattableString ($"...{var}") para parametrizar — nunca concatenar strings SQL.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · sqlRepository — ISqlRepository<Example> (Application.Contracts.Persistence.EF): expone
+//     ExecuteInTransactionAsync que envuelve el bloque delegado en BEGIN/COMMIT/ROLLBACK, permitiendo
+//     ejecutar varios ExecuteSqlAsync dentro de la misma transacción sin depender del UoW de EF.
 public sealed class ExecuteInTransactionCommandHandler(
     ISqlRepository<Example> sqlRepository
     ) : IRequestHandler<ExecuteInTransactionCommand, Result<int>>

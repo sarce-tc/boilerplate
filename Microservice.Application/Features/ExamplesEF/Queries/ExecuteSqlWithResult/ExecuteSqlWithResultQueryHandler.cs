@@ -7,9 +7,10 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.ExecuteSqlWithResult;
 // PATRÓN — Ejecutar SQL SELECT arbitrario y mapear resultados a un DTO.
-// · ISqlQueryRepository<T>.FromSqlAsync — recibe FormattableString del request y materializa entidades.
-// · AutoMapper convierte las entidades al DTO de respuesta.
-// · Usar cuando la query es tan compleja que IReadRepository<T> no la puede expresar con predicados.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · sqlQueryRepository — ISqlQueryRepository<Example> (Application.Contracts.Persistence.EF): ejecuta el
+//     FormattableString del query mediante FromSqlAsync y materializa los resultados en entidades Example.
+//   · mapper — IMapper (AutoMapper): proyecta IEnumerable<Example> → IReadOnlyList<ExecuteSqlWithResultDto>.
 public sealed class ExecuteSqlWithResultQueryHandler(
     ISqlQueryRepository<Example> sqlQueryRepository,
     IMapper mapper

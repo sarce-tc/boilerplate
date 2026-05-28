@@ -7,11 +7,11 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.GetExampleWithItems;
 // PATRÓN — Query con eager-loading de colección hija usando generic-first.
-// · IReadRepository<Example> + includeProperties:[e => e.Items] carga el aggregate
-//   con sus hijos en una sola ida a la BD sin crear un método específico en el repositorio.
-// · Solo crear IExampleReadRepository cuando el query necesite lógica que no existe en
-//   GetEntityAsync (ej. ILike case-insensitive, ThenInclude anidado con filtro).
-// · AutoMapper resuelve Example → GetExampleWithItemsDto incluyendo Items automáticamente.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · readRepository — IReadRepository<Example> (Application.Contracts.Persistence.EF): carga el aggregate
+//     con includeProperties:[e => e.Items] para materializar root + hijos en una sola consulta SQL.
+//   · mapper — IMapper (AutoMapper): proyecta Example (con Items) → GetExampleWithItemsDto incluyendo la
+//     colección hija mapeada a IEnumerable<GetExampleItemDto>.
 public sealed class GetExampleWithItemsQueryHandler(
     IReadRepository<Example> readRepository,
     IMapper mapper

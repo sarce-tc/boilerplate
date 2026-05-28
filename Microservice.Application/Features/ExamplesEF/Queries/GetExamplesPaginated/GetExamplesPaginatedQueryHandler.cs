@@ -8,14 +8,11 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.GetExamplesPaginated;
 // PATRÓN — Obtener colección paginada (offset) con metadatos para navegación del cliente.
-// ── Decisiones de diseño de referencia ────────────────────────────────────
-//   · Generic-first: inyectar IReadRepository<T> directamente porque GetListPaginatedAsync
-//     existe en la superficie genérica.
-//   · GetListPaginatedAsync emite COUNT(*) + SELECT LIMIT/OFFSET en dos queries.
-//     El resultado se envuelve en PagedResult<T> con RowsCount, CurrentPage, PageSize.
-//   · Paginación obligatoria para cualquier colección no acotada (ver §7 CLAUDE.md).
-//   · AutoMapper proyecta cada elemento al DTO de salida; PagedResult se reconstruye
-//     con los metadatos originales para que el cliente pueda navegar.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · readRepository — IReadRepository<Example> (Application.Contracts.Persistence.EF): ejecuta
+//     GetListPaginatedAsync que emite COUNT(*) + SELECT LIMIT/OFFSET y devuelve PagedResult<Example>.
+//   · mapper — IMapper (AutoMapper): proyecta IEnumerable<Example> → IEnumerable<GetExamplesPaginatedDto>
+//     antes de reconstruir el PagedResult con los metadatos originales.
 public class GetExamplesPaginatedQueryHandler(
     IReadRepository<Example> readRepository,
     IMapper mapper

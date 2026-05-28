@@ -2,6 +2,7 @@ using FluentValidation;
 using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.ExamplesEF.Commands.UpdateExample;
+// Valida UpdateExampleCommand antes de que llegue al handler mediante el pipeline de MediatR.
 public sealed class UpdateExampleCommandValidator : AbstractValidator<UpdateExampleCommand>
 {
     public UpdateExampleCommandValidator()

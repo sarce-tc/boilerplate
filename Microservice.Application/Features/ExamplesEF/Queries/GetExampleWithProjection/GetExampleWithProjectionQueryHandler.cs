@@ -6,8 +6,10 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.GetExampleWithProjection;
 // PATRÓN — Query con proyección de campos para un único aggregate (reduce columnas transferidas).
-// · IQueryRepository<T>.GetEntityAsync con selector + predicate — EF emite SELECT solo de las columnas del DTO.
-// · Equivalente a GetExamplesWithProjection pero para un registro individual identificado por predicado.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · queryRepository — IQueryRepository<Example> (Application.Contracts.Persistence.EF): ejecuta GetEntityAsync
+//     con selector lambda y predicado, emitiendo SELECT solo de las columnas del DTO sin materializar la entidad
+//     completa ni invocar AutoMapper.
 public sealed class GetExampleWithProjectionQueryHandler(
     IQueryRepository<Example> queryRepository
     ) : IRequestHandler<GetExampleWithProjectionQuery, Result<GetExampleWithProjectionDto>>

@@ -5,6 +5,12 @@ using Npgsql;
 using System.Data;
 
 namespace Microservice.Infrastructure.Repositories.Dapper;
+// ═══════════════════════════════════════════════════════════════════════
+// AGENT — Repositorio de escritura Dapper del aggregate Example.
+// TableName: examples
+// AddAsync: INSERT con RETURNING devuelve la entidad hidratada con id y timestamps generados por la BD.
+// UpdateAsync: UPDATE SET con RETURNING devuelve la entidad con updated_at actualizado por la BD.
+// ═══════════════════════════════════════════════════════════════════════
 public sealed class ExampleWriteRepository : WriteRepository<Example>, IExampleWriteRepository
 {
     protected override string TableName => "examples";

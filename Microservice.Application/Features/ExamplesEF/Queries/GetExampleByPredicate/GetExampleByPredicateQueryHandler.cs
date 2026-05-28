@@ -8,10 +8,10 @@ using System.Linq.Expressions;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.GetExampleByPredicate;
 // PATRÓN — Query de aggregate raíz sin hijos usando generic-first.
-// · IReadRepository<T>.GetEntityAsync con predicado lambda — sin includeProperties porque
-//   solo se necesita el aggregate raíz (no la colección Items).
-// · Para cargar hijos, agregar includeProperties:[e => e.Items] al mismo método — no crear
-//   un método específico en el repositorio.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · readRepository — IReadRepository<Example> (Application.Contracts.Persistence.EF): ejecuta GetEntityAsync
+//     con predicado lambda sin includeProperties, devolviendo solo el aggregate raíz sin colección de hijos.
+//   · mapper — IMapper (AutoMapper): proyecta Example → GetExampleByPredicateDto.
 public sealed class GetExampleByPredicateQueryHandler(
     IReadRepository<Example> readRepository,
     IMapper mapper

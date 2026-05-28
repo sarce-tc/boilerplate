@@ -7,17 +7,10 @@ using Microservice.Domain.Entities;
 namespace Microservice.Application.Features.ExamplesEF.Queries.GetExampleSummary;
 
 // PATRÓN — Query con IExampleService + DTO calculado (sin AutoMapper).
-// ── Decisiones de diseño de referencia ────────────────────────────────────
-//   · IExampleService.FindWithItemsAsync encapsula el lookup + includeProperties:[Items]
-//     sin que el handler conozca IReadRepository<Example> directamente.
-//   · El DTO contiene campos calculados (ItemCount, PendingItemCount, CompletedItemCount)
-//     que AutoMapper no puede proyectar sin configuración adicional; construir el
-//     record manualmente es más claro y no requiere un profile extra.
-//   · disableTracking:true (default de FindWithItemsAsync) — es una query, no hay SaveChanges.
-// ── Cuándo usar IExampleService en lugar de IReadRepository<T> directamente ─
-//   Cuando el lookup es el estándar "por publicId, opcionalmente con hijos" y no
-//   necesita un predicado personalizado ni proyección. Si la query requiere ILike,
-//   paginación o ThenInclude anidado, inyectar IReadRepository<T> o IExampleReadRepository.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · exampleService — IExampleService (Application.Services): encapsula el lookup estándar por publicId con
+//     eager-loading de Items (FindWithItemsAsync) sin que el handler conozca IReadRepository directamente;
+//     el aggregate se devuelve con disableTracking:true porque es una query sin persistencia.
 public sealed class GetExampleSummaryQueryHandler(
     IExampleService exampleService
 ) : IRequestHandler<GetExampleSummaryQuery, Result<GetExampleSummaryDto>>

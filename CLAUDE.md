@@ -23,7 +23,7 @@
 - `IReadRepository<T>` is always used without a transaction
 - `IWriteRepository<T>` is always used inside `IUnitOfWork`
 - `public_id` (GUID) is the only identifier exposed in the API — never internal `id` (int/bigint)
-- Pagination mandatory on all collection-returning endpoints
+- Pagination on collection-returning endpoints only when the feature requires it
 
 ---
 
@@ -154,7 +154,7 @@ dotnet test --no-restore -v q
 ## PERFORMANCE_RULES
 
 - No N+1 — use `includeProperties`, JOIN, or batch
-- Pagination: `GetListPaginatedAsync(currentPage, pageSize, predicate)` — mandatory for any unbounded result set
+- Pagination: `GetListPaginatedAsync(currentPage, pageSize, predicate)` — use when the feature requires it, not by default
 - Prefer Dapper for known-shape reads where performance is critical; EF for writes with migrations
 - `Channel<T>` unbounded + `SingleReader = true` for background job workers
 - Index on `public_id` — defined in DbContext, not assumed

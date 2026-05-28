@@ -4,6 +4,12 @@ using Microservice.Domain.Entities;
 using Npgsql;
 
 namespace Microservice.Infrastructure.Repositories.Dapper;
+// ═══════════════════════════════════════════════════════════════════════
+// AGENT — Repositorio de lectura Dapper del aggregate Example.
+// TableName: examples
+// SearchByNameAsync: búsqueda ILIKE por nombre con wildcard, ordena por nombre ASC.
+// ExistsByNameAsync: comprobación de unicidad case-insensitive via LOWER() sin cargar entidad.
+// ═══════════════════════════════════════════════════════════════════════
 public sealed class ExampleReadRepository
     : ReadRepository<Example>, IExampleReadRepository
 {

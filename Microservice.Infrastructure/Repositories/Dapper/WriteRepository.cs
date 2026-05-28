@@ -8,10 +8,21 @@ namespace Microservice.Infrastructure.Repositories.Dapper;
 // ═══════════════════════════════════════════════════════════════════════
 // AGENT — Dapper write base. Subclass and override TableName, AddAsync, UpdateAsync.
 // Two constructors — always implement both in concrete repos:
-//   DI  → WriteRepository(IDbConnectionFactory)               standalone use
-//   UoW → WriteRepository(NpgsqlConnection, NpgsqlTransaction) inside UnitOfWork
+//   DI  → WriteRepository(IDbConnectionFactory)                standalone use
+//   UoW → WriteRepository(NpgsqlConnection, NpgsqlTransaction)  inside UnitOfWork
 // DeleteAsync is fully implemented here (DELETE FROM {table} WHERE id = @Id).
 // Pass _transaction in every Dapper call so the SQL joins the active UoW TX.
+//
+// ── GENERIC-FIRST — evaluar en este orden antes de crear métodos específicos ──
+//   Insertar un registro                   → AddAsync(entity)      [override obligatorio]
+//   Actualizar un registro                 → UpdateAsync(entity)   [override obligatorio]
+//   Eliminar un registro por id interno    → DeleteAsync(id)       [implementado en base]
+//   ── Agregar método en la subclase SOLO si el caso no cabe arriba ──
+//   INSERT/UPDATE con columnas específicas · RETURNING · lógica de dominio propia
+//     → Agregar en IMyEntityWriteRepository e implementar en MyEntityWriteRepository
+//   Todas las escrituras deben ir dentro del bloque IUnitOfWork (BeginTransaction /
+//   Commit / Rollback) para garantizar atomicidad — nunca inyectar WriteRepository
+//   directamente en un handler; usar siempre IUnitOfWork.ExamplesWrite
 // ═══════════════════════════════════════════════════════════════════════
 public abstract class WriteRepository<T> : IWriteRepository<T>
     where T : BaseDomainModel

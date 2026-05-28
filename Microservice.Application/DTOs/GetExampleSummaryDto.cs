@@ -2,10 +2,9 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.DTOs;
 
-/// <summary>
-/// Lightweight aggregate summary: scalar fields + computed item-count statistics.
-/// No child collection is included — use <c>GetExampleWithItemsDto</c> when full item detail is needed.
-/// </summary>
+// Contrato de salida de la query GetExampleSummary.
+// El handler lo construye manualmente desde la entidad Example con Items cargados, calculando conteos
+// de ítems pendientes y completados; no pasa por AutoMapper porque contiene campos calculados.
 public record GetExampleSummaryDto(
     Guid PublicId,
     string Name,

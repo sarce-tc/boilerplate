@@ -6,6 +6,10 @@ using Microservice.Domain.Entities;
 namespace Microservice.Application.Features.ExamplesEF.Commands.DeleteManyExamples;
 
 // PATRÓN — Eliminar múltiples registros en un único statement SQL sin cargar entidades.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · unitOfWork — IUnitOfWork (Application.Contracts.Persistence.EF): expone WriteRepository.DeleteManyAsync
+//     que traduce el predicado a DELETE WHERE via ExecuteDeleteAsync (EF Bulk Ops) sin materializar entidades,
+//     y SaveChangesAsync para confirmar la operación.
 // ── Decisiones de diseño de referencia ────────────────────────────────────
 //   · Generic-first: se usa IUnitOfWork.WriteRepository (genérico) porque DeleteManyAsync
 //     existe en la superficie genérica. No se necesita IExampleWriteRepository.

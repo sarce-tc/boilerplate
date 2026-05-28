@@ -5,8 +5,9 @@ using Microservice.Application.Contracts.Persistence.EF;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.CountExamples;
 // PATRÓN — Contar registros con generic-first.
-// · IReadRepository<T>.CountAsync — no materializa entidades; emite SELECT COUNT(*).
-// · Usar para métricas, cálculos de paginación o checks de volumen sin cargar datos.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · readRepository — IReadRepository<Example> (Application.Contracts.Persistence.EF): ejecuta CountAsync
+//     que emite SELECT COUNT(*) sin materializar entidades, apropiado para métricas y cálculos de paginación.
 public sealed class CountExamplesQueryHandler(
             IReadRepository<Example> readRepository
     ) : IRequestHandler<CountExamplesQuery, Result<int>>

@@ -7,12 +7,10 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.GetExampleItemByPublicId;
 // PATRÓN — Query sobre un hijo específico usando generic-first.
-// · IReadRepository<Example> + includeProperties:[e => e.Items] — carga el aggregate
-//   y filtra el item en memoria; evita crear IExampleItemReadRepository.
-// · ExampleItem no tiene navegación inversa al padre, por lo que el filtro se hace
-//   sobre example.Items después de cargar el aggregate.
-// · Si la colección de hijos fuera muy grande (>cientos de registros), evaluar
-//   agregar un método específico que filtre por PublicId en SQL.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · readRepository — IReadRepository<Example> (Application.Contracts.Persistence.EF): carga el aggregate con
+//     includeProperties:[e => e.Items]; el filtro del hijo se realiza en memoria sobre example.Items.
+//   · mapper — IMapper (AutoMapper): proyecta el ExampleItem encontrado → GetExampleItemDto.
 public sealed class GetExampleItemByPublicIdQueryHandler(
     IReadRepository<Example> readRepository,
     IMapper mapper

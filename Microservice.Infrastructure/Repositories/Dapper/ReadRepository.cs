@@ -9,8 +9,17 @@ namespace Microservice.Infrastructure.Repositories.Dapper;
 // AGENT — Dapper read base. Subclass and override TableName (snake_case).
 // Generic queries provided: GetByIdAsync · GetByPublicIdAsync · GetAllAsync
 //                           ExistsAsync · CountAsync
-// Add specific queries in the subclass only when the generic ones don't fit.
 // DefaultTypeMap.MatchNamesWithUnderscores = true → customer_name → CustomerName
+//
+// ── GENERIC-FIRST — evaluar en este orden antes de crear métodos específicos ──
+//   Obtener registro por id interno        → GetByIdAsync(id)
+//   Obtener registro por public_id (GUID)  → GetByPublicIdAsync(publicId)
+//   Obtener todos los registros            → GetAllAsync()
+//   Verificar existencia por id interno    → ExistsAsync(id)
+//   Contar registros de la tabla           → CountAsync()
+//   ── Agregar método en la subclase SOLO si el caso no cabe arriba ──
+//   ILike · JOIN · filtro por campo distinto de id/public_id · proyección parcial
+//     → Agregar en IMyEntityReadRepository e implementar en MyEntityReadRepository
 // ═══════════════════════════════════════════════════════════════════════
 public abstract class ReadRepository<T>
     : IReadRepository<T> where T : BaseDomainModel

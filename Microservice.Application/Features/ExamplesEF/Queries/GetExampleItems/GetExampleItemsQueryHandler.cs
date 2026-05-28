@@ -7,9 +7,11 @@ using Microservice.Domain.Entities;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.GetExampleItems;
 // PATRÓN — Query que devuelve solo la colección hija usando generic-first.
-// · IReadRepository<Example> + includeProperties:[e => e.Items] — sin método específico.
-// · Se mapea únicamente example.Items (no el aggregate completo) para devolver
-//   la colección plana IEnumerable<GetExampleItemDto>.
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · readRepository — IReadRepository<Example> (Application.Contracts.Persistence.EF): carga el aggregate con
+//     includeProperties:[e => e.Items] para acceder a la colección sin método específico en el repositorio.
+//   · mapper — IMapper (AutoMapper): proyecta ICollection<ExampleItem> → IEnumerable<GetExampleItemDto>
+//     mapeando solo la colección hija, no el aggregate raíz completo.
 public sealed class GetExampleItemsQueryHandler(
     IReadRepository<Example> readRepository,
     IMapper mapper

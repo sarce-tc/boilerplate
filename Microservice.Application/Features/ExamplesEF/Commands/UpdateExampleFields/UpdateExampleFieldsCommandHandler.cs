@@ -7,6 +7,11 @@ using System.Linq.Expressions;
 namespace Microservice.Application.Features.ExamplesEF.Commands.UpdateExampleFields;
 
 // PATRÓN — Actualizar uno o varios campos scalares del aggregate con semántica PATCH (mínimo SQL).
+// ── Parámetros ────────────────────────────────────────────────────────────
+//   · readRepository — IReadRepository<Example> (Application.Contracts.Persistence.EF): recupera el aggregate
+//     sin tracking (default) para leer valores actuales antes de aplicar domain methods.
+//   · unitOfWork — IUnitOfWork (Application.Contracts.Persistence.EF): expone ExamplesWrite.UpdateFields para
+//     emitir un UPDATE que toca solo las columnas modificadas, y SaveChangesAsync para confirmar la TX implícita.
 // ── Decisiones de diseño de referencia ────────────────────────────────────
 //   · disableTracking:true (default) — no se necesita tracking completo porque no hay hijos.
 //   · UpdateFields(entity, [x => x.Campo1, x => x.Campo2]) hace Attach + marca solo esas
