@@ -10,7 +10,6 @@ namespace Microservice.API.Controllers;
 /// Universal job status endpoint.
 ///
 /// Clients (including AI agents) submit long-running work via domain controllers
-/// (e.g. POST /orders → 202 Accepted + Location: /jobs/{jobId}) and poll here
 /// until the job reaches a terminal state (Completed or Failed).
 ///
 /// Polling pattern:

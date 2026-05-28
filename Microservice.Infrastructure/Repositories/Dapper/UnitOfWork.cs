@@ -5,7 +5,7 @@ namespace Microservice.Infrastructure.Repositories.Dapper;
 // ═══════════════════════════════════════════════════════════════════════
 // AGENT — UnitOfWork implementation
 // Repos are lazy-initialized sharing the same NpgsqlConnection + NpgsqlTransaction.
-// Never inject write repos directly via DI — always use IUnitOfWork.OrdersWrite.
+// Never inject write repos directly via DI — always use IUnitOfWork.ExamplesWrite.
 //
 // To add a new aggregate write repo:
 //   1. Add: private MyEntityWriteRepository? _myEntityWrite;

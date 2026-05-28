@@ -17,8 +17,6 @@ public interface ISqlQueryRepository<T> where T : BaseDomainModel
     /// ✅ GARANTIZADO: Solo lectura, no modifica datos
     /// 
     /// Ejemplos:
-    /// await sqlQueryRepo.FromSqlAsync($"SELECT * FROM Products WHERE Price > {price}");
-    /// await sqlQueryRepo.FromSqlAsync($"SELECT TOP 10 * FROM Orders ORDER BY CreatedAt DESC");
     /// </summary>
     Task<IReadOnlyList<T>> FromSqlAsync(
         FormattableString sql,
@@ -41,14 +39,6 @@ public interface ISqlCommandRepository<T> where T : BaseDomainModel
     /// Retorna: Número de registros afectados
     /// 
     /// Ejemplos:
-    /// var affected = await sqlCommandRepo.ExecuteSqlAsync(
-    ///     $"UPDATE Products SET Price = {newPrice} WHERE Category = {category}");
-    /// 
-    /// var deleted = await sqlCommandRepo.ExecuteSqlAsync(
-    ///     $"DELETE FROM Orders WHERE CreatedAt < {cutoffDate}");
-    /// 
-    /// var inserted = await sqlCommandRepo.ExecuteSqlAsync(
-    ///     $"INSERT INTO AuditLog VALUES ({userId}, {action}, {timestamp})");
     /// </summary>
     Task<int> ExecuteSqlAsync(
         FormattableString sql,
@@ -60,11 +50,6 @@ public interface ISqlCommandRepository<T> where T : BaseDomainModel
     /// Retorna: Número de registros afectados
     /// 
     /// Ejemplos:
-    /// var affected = await sqlCommandRepo.ExecuteStoredProcedureAsync(
-    ///     $"EXEC sp_ArchiveOldOrders @Days = {days}");
-    /// 
-    /// var processed = await sqlCommandRepo.ExecuteStoredProcedureAsync(
-    ///     $"EXEC sp_ProcessPendingPayments @BatchSize = {batchSize}");
     /// </summary>
     Task<int> ExecuteStoredProcedureAsync(
         FormattableString sql,
