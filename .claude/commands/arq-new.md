@@ -1,67 +1,146 @@
-# ARQ_NEW — Aggregate scaffold protocol
+# ARQ_NEW — Aggregate scaffold state machine
 
-## SKILL_IDENTITY
-PURPOSE: Deterministic end-to-end scaffold for a new aggregate
-REFERENCE: /arquitectura (routing) · CLAUDE.md (invariants)
-DEFAULT: no exploration · expand templates · evaluate conditionals · execute
+> Paths: inherit PROJECT_ROOT / APP_SRC / INFRA_SRC / API_SRC / DOMAIN_SRC from /arquitectura
 
 ---
 
 ## GLOBAL_INVARIANTS
 - generic-first at every step — evaluate before creating specific contracts
 - `DomainException` enforces invariants — no guard duplication in Application layer
-- `sealed` · file-scoped namespaces · collection expressions `[]` · primary constructors
+- `sealed` · file-scoped namespaces · `[]` · primary constructors
 - `SaveChangesAsync` = implicit EF TX — no explicit TX block in EF handlers
 - Explicit TX (try/catch/rollback) ONLY in Dapper command handlers
 
 ---
 
-## MODE: EF_CORE
+## STATE: S0_INIT
+GUARD:  aggregate name + tech (EF|Dapper) provided
+ACTION: resolve MyEntity = provided name
+NEXT:   → S1_EF      [tech == EF]
+        → S1_DAPPER  [tech == Dapper]
 
-ARCHETYPE: Example + ExampleItem
-READ_FIRST: `CreateExampleCommandHandler.cs` · `UpdateExampleCommandHandler.cs`
+---
 
-### EXECUTION_SEQUENCE
+# ── EF CORE PATH ─────────────────────────────────────────────────────────────
 
-```
-1. DOMAIN
-   Entity:   sealed · private setters · factory constructor · DomainException
-   Children: _items = [] · IReadOnlyList<TItem> Items => _items.AsReadOnly()
-   Item:     sealed · internal constructor · private setters · internal state methods
+## STATE: S1_EF
+ACTION: Read cmd.create + cmd.update from /arquitectura REFERENCE_FILES
+NEXT:   → S2_DOMAIN
 
-2. DB_CONTEXT
-   Add:      DbSet<MyEntity> [+ DbSet<MyEntityItem>]
-   Config:   HasIndex(e=>e.PublicId).IsUnique() · HasMaxLength · IsRequired
-   Children: Navigation(e=>e.Items).HasField("_items").UsePropertyAccessMode(Field)
-   Migrate:  dotnet ef migrations add Add_MyEntity --project Infrastructure --startup API
-             dotnet ef database update --project Infrastructure --startup API
+## STATE: S2_DOMAIN
+ACTION: create `{DOMAIN_SRC}\Entities\MyEntity.cs`
+        [if children] create `{DOMAIN_SRC}\Entities\MyEntityItem.cs`
+RULES:  sealed · private setters · factory constructor · DomainException
+        children: `_items = []` · `IReadOnlyList<TItem> Items => _items.AsReadOnly()`
+        item: internal constructor · private setters · internal state methods
+NEXT:   → S3_DB_CONTEXT
 
-3. CONTRACTS  [conditional — evaluate each independently]
-   IMyEntityReadRepository:  ONLY IF → ILike · complex join · filter not in IReadRepository<T>
-   IMyEntityWriteRepository: ONLY IF → write operation not in IWriteRepository<T>
-   IUnitOfWork:              ADD property ONLY IF IMyEntityWriteRepository created
+## STATE: S3_DB_CONTEXT
+ACTION: edit `{INFRA_SRC}\Persistence\ExampleDbContext.cs`
+        + `DbSet<MyEntity>` [+ `DbSet<MyEntityItem>`]
+        + `HasIndex(e=>e.PublicId).IsUnique()` · `HasMaxLength` · `IsRequired`
+        [if children] + `Navigation(e=>e.Items).HasField("_items").UsePropertyAccessMode(Field)`
+        run: dotnet ef migrations add Add_MyEntity --project Microservice.Infrastructure --startup Microservice.API
+             dotnet ef database update --project Microservice.Infrastructure --startup Microservice.API
+NEXT:   → S4_CONTRACTS
 
-4. APPLICATION
-   DTOs:       record (structural equality) | class (Dapper multi-map)
-   Mapping:    MappingProfile → CreateMap<Command, Entity>().ConstructUsing(…)
-   Commands:   [see COMMAND_PATTERNS]
-   Queries:    [see QUERY_PATTERNS]
-   Validators: FluentValidation · auto-registered via IPipelineBehavior scan
+## STATE: S4_CONTRACTS
+GUARD:  domain entity created
+ACTION: evaluate each independently:
+        `IMyEntityReadRepository`:  ONLY IF → ILike · complex join · filter not in `IReadRepository<T>`
+        `IMyEntityWriteRepository`: ONLY IF → write operation not in `IWriteRepository<T>`
+        `IUnitOfWork`:              ADD lazy property ONLY IF IMyEntityWriteRepository created
+NEXT:   → S5_APPLICATION
 
-5. INFRA_REPOS  [conditional — create only if contract created in §3]
-   ReadRepository:  sealed · LINQRepository<MyEntity> · IMyEntityReadRepository
-   WriteRepository: sealed · LINQRepository<MyEntity> · IMyEntityWriteRepository
+## STATE: S5_APPLICATION
+ACTION: create DTOs — `record` (structural equality) | `class` (Dapper multi-map)
+        edit `{APP_SRC}\Mapping\MappingProfile.cs` → `CreateMap<Command, Entity>().ConstructUsing(…)`
+        create Commands per COMMAND_PATTERNS
+        create Queries per QUERY_PATTERNS
+        create Validators (FluentValidation · auto-registered via IPipelineBehavior scan)
+NEXT:   → S6_INFRA_REPOS
 
-6. DI
-   ReadRepository:  1 line InfrastructureServiceRegistration (if created)
-   WriteRepository: instantiated inside UoW only — not registered directly
-   Service:         1 line InfrastructureServiceRegistration (if I{Service} created)
+## STATE: S6_INFRA_REPOS
+GUARD:  S4_CONTRACTS evaluated
+ACTION: [if IMyEntityReadRepository created]  → create `MyEntityReadRepository : LINQRepository<MyEntity>`
+        [if IMyEntityWriteRepository created] → create `MyEntityWriteRepository : LINQRepository<MyEntity>`
+        [if none created]                     → skip
+NEXT:   → S7_DI
 
-7. API
-   Controller: thin · MediatR.Send · result.ToActionResult()
-```
+## STATE: S7_DI
+ACTION: edit `{INFRA_SRC}\InfrastuctureServiceRegistration.cs`
+        [if ReadRepository created]  + `AddScoped<IMyEntityReadRepository, MyEntityReadRepository>()`
+        [if Service created]         + `AddScoped<I{Service}, {Service}>()`
+        WriteRepository: instantiated inside UoW only — not registered directly
+NEXT:   → S8_API
 
-### COMMAND_PATTERNS
+## STATE: S8_API
+ACTION: create `{API_SRC}\Controllers\MyEntityController.cs`
+        thin · `MediatR.Send` · `result.ToActionResult()`
+NEXT:   → S9_VALIDATE
+
+---
+
+# ── DAPPER PATH ──────────────────────────────────────────────────────────────
+
+## STATE: S1_DAPPER
+ACTION: Read dapper.base-read + dapper.base-write + dapper.uow-concrete from /arquitectura REFERENCE_FILES
+NEXT:   → S2_DOMAIN [same as EF]
+
+## STATE: S3_DAPPER_CONTRACTS
+GUARD:  domain entity created
+ACTION: create `IMyEntityReadRepository` + `IMyEntityWriteRepository` (always required — no generic surface)
+        edit `IUnitOfWork` → add `IMyEntityWriteRepository MyEntityWrite { get; }`
+NEXT:   → S4_DAPPER_APPLICATION
+
+## STATE: S4_DAPPER_APPLICATION
+ACTION: create DTOs with public setters · Commands · Queries · Validators
+TX_RULE (commands with writes):
+        await unitOfWork.BeginTransactionAsync(ct);
+        try { /* ... */ await unitOfWork.CommitAsync(ct); }
+        catch { await unitOfWork.RollbackAsync(ct); throw; }
+NEXT:   → S5_DAPPER_REPOS
+
+## STATE: S5_DAPPER_REPOS
+ACTION: create ReadRepository — SQL SELECT · `MatchNamesWithUnderscores=true` · multi-map for joins
+        create WriteRepository — TWO constructors:
+          · DI: no TX
+          · UoW: `(IDbConnection, IDbTransaction)` — pass `_transaction` on every SQL call
+NEXT:   → S6_DAPPER_UOW
+
+## STATE: S6_DAPPER_UOW
+ACTION: edit `{INFRA_SRC}\Repositories\Dapper\UnitOfWork.cs`
+        + lazy: `_myEntity ??= new MyEntityWriteRepository(_connection!, _transaction!)`
+NEXT:   → S7_DAPPER_DI
+
+## STATE: S7_DAPPER_DI
+ACTION: edit `{INFRA_SRC}\InfrastuctureServiceRegistration.cs`
+        + `AddScoped<IMyEntityReadRepository, MyEntityReadRepository>()`
+        + `AddScoped<IMyEntityWriteRepository, MyEntityWriteRepository>()`
+NEXT:   → S8_API [same as EF]
+
+---
+
+# ── SHARED STATES ────────────────────────────────────────────────────────────
+
+## STATE: S9_VALIDATE
+GUARD:  files written
+ACTION: dotnet test --no-restore -v q
+NEXT:   → DONE    [0 errors · 0 new failures]
+        → S_ERROR  [compile error | test failure]
+
+## STATE: S_ERROR
+GUARD:  compile error | test failure | unknown pattern
+ACTION: Glob(target_directory) — 1 glob max
+        Read(1 corrective file) — 1 read max
+        diagnose → resume failed state
+NEXT:   → failed state
+
+## STATE: DONE [terminal]
+
+---
+
+## COMMAND_PATTERNS
 
 | Type | Load | Domain | Persist |
 |---|---|---|---|
@@ -71,58 +150,16 @@ READ_FIRST: `CreateExampleCommandHandler.cs` · `UpdateExampleCommandHandler.cs`
 | Delete | `GetEntityAsync` | — | `Delete` → `SaveChanges` |
 | Delete bulk | — | — | `WriteRepository.DeleteManyAsync(predicate)` → `SaveChanges` |
 | Update bulk | — | — | `WriteRepository.UpdateManyAsync(predicate, values)` → `SaveChanges` |
-| Domain service op | load both aggregates (tracked) | `IDomainService.Method()` | `Update × N` → `SaveChanges` |
+| Domain service | load N aggregates (tracked) | `IDomainService.Method()` | `Update × N` → `SaveChanges` |
 
-### QUERY_PATTERNS
+## QUERY_PATTERNS
 
 | Type | Inject | Load |
 |---|---|---|
-| By publicId (scalar) | `IReadRepository<T>` or `IExampleService` | `GetEntityAsync(x=>x.PublicId==id)` |
+| By publicId | `IReadRepository<T>` or `IExampleService` | `GetEntityAsync(x=>x.PublicId==id)` |
+| By predicate | `IReadRepository<T>` | `GetListAsync(predicate)` |
 | Paginated | `IReadRepository<T>` | `GetListPaginatedAsync(page, size, predicate)` |
 | With children | `IReadRepository<T>` or `IExampleService` | `GetEntityAsync(predicate, includeProperties:[e=>e.Children])` |
 | Child collection | `IReadRepository<T>` | `GetEntityAsync(includeProperties)` → map `entity.Items` |
 | Single child | `IReadRepository<T>` | `GetEntityAsync(includeProperties)` → `Items.FirstOrDefault(i=>i.PublicId==id)` |
-| Computed summary | `IExampleService` | `FindWithItemsAsync` → construct DTO manually (skip mapper if computed fields) |
-
----
-
-## MODE: DAPPER
-
-ARCHETYPE: Example (Dapper) — target path Features/ExamplesDapper/
-READ_FIRST: `Infrastructure/Repositories/Dapper/ReadRepository.cs` · `WriteRepository.cs` · `UnitOfWork.cs`
-
-### EXECUTION_SEQUENCE
-
-```
-1. DOMAIN      — same as EF §1
-2. CONTRACTS   — IMyEntityReadRepository + IMyEntityWriteRepository (always required — no generic surface)
-                 IUnitOfWork → add: IMyEntityWriteRepository MyEntityWrite { get; }
-3. APPLICATION — DTOs with public setters · Commands · Queries · Validators
-4. REPOS
-   Read:  SQL SELECT · MatchNamesWithUnderscores=true · multi-map for joins
-   Write: TWO constructors — DI (no TX) | UoW (IDbConnection + IDbTransaction)
-          pass _transaction explicitly on every SQL call
-5. UoW:  lazy: _myEntity ??= new MyEntityWriteRepository(_connection!, _transaction!)
-6. DI:   2 lines InfrastructureServiceRegistration
-7. API:  same as EF §7
-```
-
-### TX_PATTERN (Dapper only)
-
-```csharp
-await unitOfWork.BeginTransactionAsync(ct);
-try { /* ... */ await unitOfWork.CommitAsync(ct); }
-catch { await unitOfWork.RollbackAsync(ct); throw; }
-```
-
----
-
-## EXPLORATION_PROTOCOL
-
-DEFAULT: disabled
-
-TRIGGER_IF:
-- Step requires pattern not in COMMAND_PATTERNS / QUERY_PATTERNS
-- Compile error indicates contract divergence
-
-BOUND: Read 1 file from /arquitectura REFERENCE_FILES matching task label
+| Computed summary | `IExampleService` | `FindWithItemsAsync` → construct DTO manually (skip mapper) |

@@ -1,4 +1,5 @@
 using Microservice.Application.Contracts.Infrastructure;
+using Microservice.Application.Contracts.Interfaces;
 using Microservice.Application.Contracts.Jobs;
 using Microservice.Application.Contracts.Persistence.Dapper;
 using Microservice.Application.Contracts.Persistence.EF;
@@ -7,6 +8,7 @@ using Microservice.Infrastructure.Jobs;
 using Microservice.Infrastructure.Persistence;
 using Microservice.Infrastructure.Repositories.Dapper;
 using Microservice.Infrastructure.Repositories.EF;
+using Microservice.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -54,6 +56,9 @@ public static class InfrastructureServiceRegistration
 
         // Example aggregate — EF repos
         services.AddScoped<Application.Contracts.Persistence.EF.IExampleReadRepository, Repositories.EF.ExampleReadRepository>();
+
+        // Domain services (cross-aggregate)
+        services.AddScoped<IExampleService, ExampleService>();
 
         // EF UoW
         services.AddScoped<Application.Contracts.Persistence.EF.IUnitOfWork, Repositories.EF.UnitOfWork>();
