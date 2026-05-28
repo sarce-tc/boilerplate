@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using Microservice.Application.Behaviours;
+using Microservice.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
@@ -15,6 +16,10 @@ public static class ApplicationServiceRegistration
 
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
+
+        // ── Application services ──────────────────────────────────────────────
+        services.AddScoped<IExampleService, ExampleService>();
+
         return services;
     }
 }

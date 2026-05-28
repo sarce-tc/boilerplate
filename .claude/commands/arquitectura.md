@@ -73,6 +73,7 @@ El agente debe seguir este orden de decisión para cada nueva entidad:
 |---|---|
 | Error handling | `API/ExceptionHandling/GlobalExceptionHandler.cs` · `API/Extensions/ResultExtensions.cs` |
 | DI de todos los repos | `Infrastructure/InfrastuctureServiceRegistration.cs` |
+| Application services | contratos: `Application/Contracts/Interfaces/` · implementaciones: `Infrastructure/Services/` |
 | Nuevo aggregate end-to-end | `/arq-new` |
 | Convenciones | `CLAUDE.md` (siempre en contexto) |
 

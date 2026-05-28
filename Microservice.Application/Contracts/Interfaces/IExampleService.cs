@@ -1,6 +1,6 @@
 using Microservice.Domain.Entities;
 
-namespace Microservice.Domain.Services;
+namespace Microservice.Application.Contracts.Interfaces;
 
 /// <summary>
 /// Domain service for cross-aggregate operations on <see cref="Example"/> aggregates.
@@ -13,7 +13,7 @@ namespace Microservice.Domain.Services;
 /// caller's responsibility via <c>IUnitOfWork</c>.
 /// </para>
 /// </summary>
-public interface IExampleDomainService
+public interface IExampleService
 {
     /// <summary>
     /// Moves a <see cref="ExampleItem"/> from <paramref name="source"/> to

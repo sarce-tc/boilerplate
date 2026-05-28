@@ -2,6 +2,7 @@ using Asp.Versioning;
 using MediatR;
 using Microservice.API.Extensions;
 using Microservice.Application.DTOs;
+using Microservice.Application.Features.ExamplesEF.Commands.ActivateExample;
 using Microservice.Application.Features.ExamplesEF.Commands.CreateExample;
 using Microservice.Application.Features.ExamplesEF.Commands.DeleteExample;
 using Microservice.Application.Features.ExamplesEF.Commands.DeleteManyExamples;
@@ -19,6 +20,7 @@ using Microservice.Application.Features.ExamplesEF.Queries.GetExampleByPredicate
 using Microservice.Application.Features.ExamplesEF.Queries.GetExampleItemByPublicId;
 using Microservice.Application.Features.ExamplesEF.Queries.GetExampleItems;
 using Microservice.Application.Features.ExamplesEF.Queries.GetExamplesFromSql;
+using Microservice.Application.Features.ExamplesEF.Queries.GetExampleSummary;
 using Microservice.Application.Features.ExamplesEF.Queries.GetExamplesPaginated;
 using Microservice.Application.Features.ExamplesEF.Queries.GetExamplesWithProjection;
 using Microservice.Application.Features.ExamplesEF.Queries.GetExampleWithItems;
@@ -375,6 +377,50 @@ public class ExamplesEFController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new DeleteManyExamplesCommand(publicIds);
+        var result = await _mediator.Send(command, cancellationToken);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// GET /api/examples/{publicId}/summary
+    /// Get Example aggregate summary with computed item statistics
+    ///
+    /// Use Case: Dashboard cards, list-view rows where item counts matter but full item detail is not needed.
+    ///
+    /// Returns: 200 OK with PublicId, Name, Status, ItemCount, PendingItemCount, CompletedItemCount
+    /// Error: 404 Not Found if not exists
+    /// </summary>
+    [HttpGet("{publicId:guid}/summary")]
+    [ProducesResponseType(typeof(GetExampleSummaryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetExampleSummary(
+        Guid publicId,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetExampleSummaryQuery(publicId);
+        var result = await _mediator.Send(query, cancellationToken);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// PUT /api/examples/{publicId}/activate
+    /// Reactivate an Inactive Example
+    ///
+    /// Use Case: Restore a previously deactivated aggregate.
+    /// Domain rule: if the Example is already Active, the domain throws DomainException → HTTP 409.
+    ///
+    /// Returns: 200 OK with PublicId
+    /// Error: 404 Not Found · 409 Conflict if already active
+    /// </summary>
+    [HttpPut("{publicId:guid}/activate")]
+    [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ActivateExample(
+        Guid publicId,
+        CancellationToken cancellationToken)
+    {
+        var command = new ActivateExampleCommand(publicId);
         var result = await _mediator.Send(command, cancellationToken);
         return result.ToActionResult();
     }

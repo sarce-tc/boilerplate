@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Contracts\Interfaces\" />
+    <Folder Include="Features\ExamplesDapper\" />
   </ItemGroup>
 
 </Project>

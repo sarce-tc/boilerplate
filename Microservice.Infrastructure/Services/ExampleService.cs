@@ -1,13 +1,14 @@
+using Microservice.Application.Contracts.Interfaces;
 using Microservice.Domain.Entities;
 using Microservice.Domain.Exceptions;
 
-namespace Microservice.Domain.Services;
+namespace Microservice.Infrastructure.Services;
 
 /// <summary>
-/// Default implementation of <see cref="IExampleDomainService"/>.
+/// Default implementation of <see cref="IExampleService"/>.
 /// Pure domain logic — no I/O, no infrastructure dependencies.
 /// </summary>
-public sealed class ExampleDomainService : IExampleDomainService
+public sealed class ExampleService : IExampleService
 {
     /// <inheritdoc/>
     public void TransferItem(Example source, Example destination, Guid itemPublicId)
