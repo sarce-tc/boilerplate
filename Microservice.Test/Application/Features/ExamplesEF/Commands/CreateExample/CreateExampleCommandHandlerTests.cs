@@ -143,7 +143,7 @@ public class CreateExampleCommandHandlerTests
     {
         var command       = new CreateExampleCommand("Test", "Description");
         var mappedExample = new Example("Test", "Description");
-        var callOrder     = new List<string>();
+        List<string> callOrder = [];
 
         _mockMapper
             .Setup(m => m.Map<Example>(command))

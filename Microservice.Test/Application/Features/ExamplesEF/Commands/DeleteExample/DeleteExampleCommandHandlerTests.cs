@@ -147,7 +147,7 @@ public class DeleteExampleCommandHandlerTests
     public async Task Handle_ShouldCallRepositoryOperationsInCorrectOrder()
     {
         var example   = new Example("Test", "Description") { Id = 1 };
-        var callOrder = new List<string>();
+        List<string> callOrder = [];
 
         _mockReadRepository
             .Setup(r => r.GetEntityAsync(It.IsAny<Expression<Func<Example, bool>>>(), null, null, It.IsAny<bool>(), It.IsAny<CancellationToken>()))

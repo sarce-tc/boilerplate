@@ -3,12 +3,10 @@ using Microservice.Application.Common.Interfaces;
 using Microservice.Application.Common.Results;
 using Microservice.Application.DTOs;
 
-namespace Microservice.Application.Features.ExamplesEF.Queries.GetAllExample
+namespace Microservice.Application.Features.ExamplesEF.Queries.GetAllExample;
+public record GetAllExamplesQuery : IRequest<Result<IEnumerable<GetAllExamplesDto>>>, ICacheableQuery
 {
-    public record GetAllExamplesQuery : IRequest<Result<IEnumerable<GetAllExamplesDto>>>, ICacheableQuery
-    {
-        public string CacheKey => nameof(GetAllExamplesQuery);
+    public string CacheKey => nameof(GetAllExamplesQuery);
 
-        public TimeSpan? Expiration => TimeSpan.FromDays(1);
-    }
+    public TimeSpan? Expiration => TimeSpan.FromDays(1);
 }

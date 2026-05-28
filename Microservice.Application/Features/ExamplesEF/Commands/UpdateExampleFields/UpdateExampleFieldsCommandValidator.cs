@@ -1,16 +1,14 @@
 using FluentValidation;
 
-namespace Microservice.Application.Features.ExamplesEF.Commands.UpdateExampleFields
+namespace Microservice.Application.Features.ExamplesEF.Commands.UpdateExampleFields;
+public sealed class UpdateExampleFieldsCommandValidator : AbstractValidator<UpdateExampleFieldsCommand>
 {
-    public class UpdateExampleFieldsCommandValidator : AbstractValidator<UpdateExampleFieldsCommand>
+    public UpdateExampleFieldsCommandValidator()
     {
-        public UpdateExampleFieldsCommandValidator()
-        {
-            RuleFor(x => x.PublicId)
-                .NotEmpty()
-                .WithMessage("PublicId is required")
-                .WithErrorCode("PublicIdInvalid")
-                .WithSeverity(Severity.Error);
-        }
+        RuleFor(x => x.PublicId)
+            .NotEmpty()
+            .WithMessage("PublicId is required")
+            .WithErrorCode("PublicIdInvalid")
+            .WithSeverity(Severity.Error);
     }
 }

@@ -1,9 +1,7 @@
-﻿using System.Data;
+using System.Data;
 
-namespace Microservice.Application.Contracts.Persistence.Dapper
+namespace Microservice.Application.Contracts.Persistence.Dapper;
+public interface IDbConnectionFactory
 {
-    public interface IDbConnectionFactory
-    {
-        Task<IDbConnection> CreateAsync(CancellationToken ct = default);
-    }
+    Task<IDbConnection> CreateAsync(CancellationToken ct = default);
 }

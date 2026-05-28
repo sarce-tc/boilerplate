@@ -1,4 +1,4 @@
-﻿// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
 // AGENT ENTRY POINT — Dapper write path (all mutations that need atomicity)
 //
 // Usage pattern in every command handler:
@@ -13,13 +13,11 @@
 //
 // Implementation: Infrastructure/Repositories/Dapper/UnitOfWork.cs
 // ═══════════════════════════════════════════════════════════════════════════
-namespace Microservice.Application.Contracts.Persistence.Dapper
+namespace Microservice.Application.Contracts.Persistence.Dapper;
+public interface IUnitOfWork : IAsyncDisposable
 {
-    public interface IUnitOfWork : IAsyncDisposable
-    {
-        IExampleWriteRepository  ExamplesWrite  { get; }
-        Task BeginTransactionAsync(CancellationToken ct = default);
-        Task CommitAsync(CancellationToken ct = default);
-        Task RollbackAsync(CancellationToken ct = default);
-    }
+    IExampleWriteRepository  ExamplesWrite  { get; }
+    Task BeginTransactionAsync(CancellationToken ct = default);
+    Task CommitAsync(CancellationToken ct = default);
+    Task RollbackAsync(CancellationToken ct = default);
 }

@@ -1,8 +1,6 @@
-﻿namespace Microservice.Application.Common.Interfaces
+namespace Microservice.Application.Common.Interfaces;
+public interface ICacheableQuery
 {
-    public interface ICacheableQuery
-    {
-        string CacheKey { get; }
-        TimeSpan? Expiration { get; }
-    }
+    string CacheKey { get; }
+    TimeSpan? Expiration { get; }
 }

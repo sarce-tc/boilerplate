@@ -3,10 +3,8 @@ using Microservice.Application.Common.Results;
 using Microservice.Application.DTOs;
 using Microservice.Application.Models;
 
-namespace Microservice.Application.Features.ExamplesEF.Queries.GetExamplesPaginated
-{
-    public record GetExamplesPaginatedQuery(
-        int CurrentPage,
-        int PageSize
-    ) : IRequest<Result<PagedResult<GetExamplesPaginatedDto>>>;
-}
+namespace Microservice.Application.Features.ExamplesEF.Queries.GetExamplesPaginated;
+public record GetExamplesPaginatedQuery(
+    int CurrentPage,
+    int PageSize
+) : IRequest<Result<PagedResult<GetExamplesPaginatedDto>>>;
