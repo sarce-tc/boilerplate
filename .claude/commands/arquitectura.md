@@ -1,116 +1,138 @@
-# /arquitectura — Navegación del proyecto
+# ARQ — Routing protocol
 
-**Sesión cálida** (archivos ya en contexto): trabaja directo, omite lecturas.
-**Sesión fría**: lee los archivos de tu fila antes de escribir código.
-
----
-
-## Implementaciones de referencia
-
-| Aggregate | Path | Propósito |
-|---|---|---|
-| `Order` | **Dapper** | Patrón de referencia para lectura performante con SQL explícito y transacciones manuales. |
-| `Example` + `ExampleItem` | **EF Core** | Patrón de referencia para escritura con LINQ, change-tracking y aggregate con hijos. Leer antes de implementar una nueva entidad EF. |
-
-> Nunca degradar la claridad de estos dos aggregates al refactorizar — son la documentación viva del stack.
+## SKILL_IDENTITY
+PURPOSE: Route agent to correct reference file without codebase exploration
+CACHES: namespace topology · repository contracts · CQRS archetype locations · DI registration
+DEFAULT: no exploration · no grep loops · no pattern discovery
 
 ---
 
-## Principio generic-first (EF Core)
-
-El agente debe seguir este orden de decisión para cada nueva entidad:
-
-1. **Inyectar `IReadRepository<T>`** en query handlers y validators — cubre el 80 % de los casos (FindAsync, GetEntityAsync, GetListPaginatedAsync, ExistsAsync, etc.).
-2. **Usar `IUnitOfWork.WriteRepository`** en command handlers para operaciones bulk (DeleteManyAsync, UpdateManyAsync).
-3. **Crear `IMyEntityWriteRepository : IWriteRepository<T>`** solo si el aggregate necesita métodos de escritura que no existen en la superficie genérica.
-4. **Crear `IMyEntityReadRepository : IReadRepository<T>`** solo si el handler necesita queries que no existen en la superficie genérica (eager-loading de hijos, filtros con lógica de negocio).
+## GLOBAL_INVARIANTS
+- Namespaces stable — do not rediscover
+- generic-first always: `IReadRepository<T>` → `IUnitOfWork.WriteRepository` → specific contracts
+- `Example` (EF) + `Example` (Dapper) = canonical archetypes — do not degrade
+- `DomainException` → `GlobalExceptionHandler` → HTTP 409 — no try/catch in handlers
+- `sealed` on all handlers · validators · repos · exceptions
 
 ---
 
-## Archivos por tarea
+## DECISION: Repository
 
-### Path EF Core — leer para nueva entidad
-
-| Tarea | Archivo de referencia |
+| Scenario | Use |
 |---|---|
-| Entidad raíz con hijos | `Domain/Entities/Example.cs` · `Domain/Entities/ExampleItem.cs` |
-| Contratos genéricos EF | `Application/Contracts/Persistence/EF/ILINQRepository.cs` |
-| Contrato UoW EF | `Application/Contracts/Persistence/EF/IUnitOfWork.cs` |
-| Contrato write específico | `Application/Contracts/Persistence/EF/IExampleWriteRepository.cs` |
-| Contrato read específico | `Application/Contracts/Persistence/EF/IExampleReadRepository.cs` |
-| LINQRepository base | `Infrastructure/Repositories/EF/LINQRepository.cs` |
-| Write repo concreto | `Infrastructure/Repositories/EF/ExampleWriteRepository.cs` |
-| Read repo concreto | `Infrastructure/Repositories/EF/ExampleReadRepository.cs` |
-| UoW concreto | `Infrastructure/Repositories/EF/UnitOfWork.cs` |
-| DbContext + migraciones | `Infrastructure/Persistence/ExampleDbContext.cs` |
-| Create (aggregate + hijos) | `Features/ExamplesEF/Commands/CreateExample/CreateExampleCommandHandler.cs` |
-| Update (scalar + hijos) | `Features/ExamplesEF/Commands/UpdateExample/UpdateExampleCommandHandler.cs` |
-| Update (PATCH scalar) | `Features/ExamplesEF/Commands/UpdateExampleFields/UpdateExampleFieldsCommandHandler.cs` |
-| Delete individual | `Features/ExamplesEF/Commands/DeleteExample/DeleteExampleCommandHandler.cs` |
-| Delete bulk sin carga | `Features/ExamplesEF/Commands/DeleteManyExamples/DeleteManyExamplesCommandHandler.cs` |
-| Update bulk sin carga | `Features/ExamplesEF/Commands/UpdateManyExamples/UpdateManyExamplesCommandHandler.cs` |
-| Query por PK | `Features/ExamplesEF/Queries/GetExampleById/GetExampleByIdQueryHandler.cs` |
-| Query paginada | `Features/ExamplesEF/Queries/GetExamplesPaginated/GetExamplesPaginatedQueryHandler.cs` |
-| Query aggregate + hijos (includeProperties) | `Features/ExamplesEF/Queries/GetExampleWithItems/GetExampleWithItemsQueryHandler.cs` |
-| Query colección hija (includeProperties) | `Features/ExamplesEF/Queries/GetExampleItems/GetExampleItemsQueryHandler.cs` |
-| Query hijo individual (includeProperties + in-memory filter) | `Features/ExamplesEF/Queries/GetExampleItemByPublicId/GetExampleItemByPublicIdQueryHandler.cs` |
-| Mapping | `Application/Mapping/MappingProfile.cs` |
+| Read by predicate · paginate · exists · count | `IReadRepository<T>` |
+| Read with children | `IReadRepository<T>` + `includeProperties:[e=>e.Children]` |
+| Write, change-tracked | `IUnitOfWork.ExamplesWrite` or `WriteRepository` |
+| Bulk delete/update without loading | `IUnitOfWork.WriteRepository.DeleteManyAsync / UpdateManyAsync` |
+| ILike · complex join · business filter not in generic surface | `IMyEntityReadRepository` |
+| Custom write not in generic surface | `IMyEntityWriteRepository` |
 
-### Path Dapper — leer para nueva entidad
+## DECISION: Service injection
 
-| Tarea | Archivo de referencia |
+| Context | Inject |
 |---|---|
-| Repositorio lectura | `Infrastructure/Repositories/Dapper/OrderReadRepository.cs` |
-| Repositorio escritura | `Infrastructure/Repositories/Dapper/OrderWriteRepository.cs` |
-| UoW Dapper | `Infrastructure/Repositories/Dapper/UnitOfWork.cs` · `Application/Contracts/Persistence/Dapper/IUnitOfWork.cs` |
-| Command handler | `Features/Orders/Commands/CancelOrder/CancelOrderCommandHandler.cs` |
-| Query handler | `Features/Orders/Queries/GetOrderById/GetOrderByIdQueryHandler.cs` |
-| Controller | `API/Controllers/OrdersController.cs` · `API/Extensions/ResultExtensions.cs` |
-
-### Compartido
-
-| Tarea | Archivo |
-|---|---|
-| Error handling | `API/ExceptionHandling/GlobalExceptionHandler.cs` · `API/Extensions/ResultExtensions.cs` |
-| DI de todos los repos | `Infrastructure/InfrastuctureServiceRegistration.cs` |
-| Application services | contratos: `Application/Contracts/Interfaces/` · implementaciones: `Infrastructure/Services/` |
-| Nuevo aggregate end-to-end | `/arq-new` |
-| Convenciones | `CLAUDE.md` (siempre en contexto) |
+| Query — standard lookup by publicId | `IExampleService` → `FindAsync` / `FindWithItemsAsync` |
+| Query — custom predicate / projection | `IReadRepository<T>` |
+| Command — tracked scalar (no children) | `IExampleService.FindTrackedAsync` |
+| Command — tracked + children | `IReadRepository<T>` (`includeProperties`, `disableTracking:false`) |
 
 ---
 
-## Estructura de carpetas
+## PATH_PATTERNS
 
 ```
-Microservice.Domain/
-  Entities/    Example.cs · ExampleItem.cs · ExampleStatus.cs · ExampleItemStatus.cs
-               Order.cs · OrderItem.cs · OrderStatus.cs
+Commands:     Application/Features/{Aggregate}/Commands/{Action}/{Action}Command(Handler|Validator).cs
+Queries:      Application/Features/{Aggregate}/Queries/{Action}/{Action}Query(Handler).cs
+DTOs:         Application/DTOs/{Dto}Dto.cs
+Repos EF:     Infrastructure/Repositories/EF/{Entity}(Read|Write)Repository.cs
+Repos Dapper: Infrastructure/Repositories/Dapper/{Entity}(Read|Write)Repository.cs
+Services:     Application/Contracts/Interfaces/I{Service}.cs  ·  Infrastructure/Services/{Service}.cs
+Controllers:  API/Controllers/{Aggregate}Controller.cs
+```
+
+---
+
+## REFERENCE_FILES (read only when task label matches)
+
+| Task | File |
+|---|---|
+| EF entity + children | `Domain/Entities/Example.cs` · `Domain/Entities/ExampleItem.cs` |
+| EF generic contracts | `Application/Contracts/Persistence/EF/ILINQRepository.cs` |
+| EF UoW contract | `Application/Contracts/Persistence/EF/IUnitOfWork.cs` |
+| EF specific write contract | `Application/Contracts/Persistence/EF/IExampleWriteRepository.cs` |
+| EF specific read contract | `Application/Contracts/Persistence/EF/IExampleReadRepository.cs` |
+| EF base repo | `Infrastructure/Repositories/EF/LINQRepository.cs` |
+| EF write repo | `Infrastructure/Repositories/EF/ExampleWriteRepository.cs` |
+| EF read repo | `Infrastructure/Repositories/EF/ExampleReadRepository.cs` |
+| EF UoW concrete | `Infrastructure/Repositories/EF/UnitOfWork.cs` |
+| DbContext | `Infrastructure/Persistence/ExampleDbContext.cs` |
+| Command: Create | `Features/ExamplesEF/Commands/CreateExample/CreateExampleCommandHandler.cs` |
+| Command: Update full | `Features/ExamplesEF/Commands/UpdateExample/UpdateExampleCommandHandler.cs` |
+| Command: Update partial | `Features/ExamplesEF/Commands/UpdateExampleFields/UpdateExampleFieldsCommandHandler.cs` |
+| Command: Delete | `Features/ExamplesEF/Commands/DeleteExample/DeleteExampleCommandHandler.cs` |
+| Command: Delete bulk | `Features/ExamplesEF/Commands/DeleteManyExamples/DeleteManyExamplesCommandHandler.cs` |
+| Command: Update bulk | `Features/ExamplesEF/Commands/UpdateManyExamples/UpdateManyExamplesCommandHandler.cs` |
+| Query: by predicate | `Features/ExamplesEF/Queries/GetExampleByPredicate/GetExampleByPredicateQueryHandler.cs` |
+| Query: paginated | `Features/ExamplesEF/Queries/GetExamplesPaginated/GetExamplesPaginatedQueryHandler.cs` |
+| Query: aggregate + children | `Features/ExamplesEF/Queries/GetExampleWithItems/GetExampleWithItemsQueryHandler.cs` |
+| Query: child collection | `Features/ExamplesEF/Queries/GetExampleItems/GetExampleItemsQueryHandler.cs` |
+| Query: single child | `Features/ExamplesEF/Queries/GetExampleItemByPublicId/GetExampleItemByPublicIdQueryHandler.cs` |
+| Mapping | `Application/Mapping/MappingProfile.cs` |
+| Dapper UoW contract | `Application/Contracts/Persistence/Dapper/IUnitOfWork.cs` |
+| Dapper repo base | `Infrastructure/Repositories/Dapper/ReadRepository.cs` · `WriteRepository.cs` |
+| Dapper UoW concrete | `Infrastructure/Repositories/Dapper/UnitOfWork.cs` |
+| Controller + result mapping | `API/Controllers/ExamplesEFController.cs` · `API/Extensions/ResultExtensions.cs` |
+| Error handling | `API/ExceptionHandling/GlobalExceptionHandler.cs` |
+| DI registration | `Infrastructure/InfrastuctureServiceRegistration.cs` |
+| App services (name given at runtime) | Glob `Infrastructure/Services/` → read matching file |
+
+---
+
+## DIRECTORY (compact)
+
+```
+Domain/
+  Entities/    Example.cs ExampleItem.cs ExampleStatus.cs ExampleItemStatus.cs
   Exceptions/  DomainException.cs
-  Services/    IExampleDomainService.cs · ExampleDomainService.cs
+  Services/    IExampleDomainService.cs
   ValueObjects/ BaseDomainModel.cs
 
-Microservice.Application/
-  Contracts/Persistence/
-    EF/      ILINQRepository.cs (IReadRepository<T> · IWriteRepository<T> · IQueryRepository<T>)
-             IUnitOfWork.cs · ISqlRepository.cs
-             IExampleWriteRepository.cs · IExampleReadRepository.cs
-    Dapper/  IUnitOfWork.cs · IReadRepository.cs · IWriteRepository.cs
-             IExampleReadRepository.cs · IExampleWriteRepository.cs
+Application/
+  Contracts/
+    Interfaces/          I{Service}.cs
+    Persistence/EF/      ILINQRepository.cs IUnitOfWork.cs ISqlRepository.cs
+                         IExampleWriteRepository.cs IExampleReadRepository.cs
+    Persistence/Dapper/  IUnitOfWork.cs IReadRepository.cs IWriteRepository.cs
   Features/
-    ExamplesEF/  Commands/ · Queries/
-    Orders/      Commands/ · Queries/
-  Mapping/     MappingProfile.cs
+    ExamplesEF/      Commands/ Queries/
+    ExamplesDapper/  Commands/ Queries/  ← planned
+  Mapping/  MappingProfile.cs
 
-Microservice.Infrastructure/
-  Persistence/     ExampleDbContext.cs · Migrations/
+Infrastructure/
+  Persistence/      ExampleDbContext.cs Migrations/
   Repositories/
-    EF/     LINQRepository.cs · SqlRepository.cs
-            ExampleWriteRepository.cs · ExampleReadRepository.cs · UnitOfWork.cs
-    Dapper/ ReadRepository.cs · WriteRepository.cs
-            OrderReadRepository.cs · OrderWriteRepository.cs · UnitOfWork.cs
+    EF/     LINQRepository.cs SqlRepository.cs
+            ExampleWriteRepository.cs ExampleReadRepository.cs UnitOfWork.cs
+    Dapper/ ReadRepository.cs WriteRepository.cs UnitOfWork.cs
+            ExampleReadRepository.cs ExampleWriteRepository.cs  ← planned
+  Services/  {Service}.cs
 
-Microservice.API/
-  Controllers/       ExamplesController.cs · OrdersController.cs
+API/
+  Controllers/       ExamplesEFController.cs ExamplesDapperController.cs  ← planned
   ExceptionHandling/ GlobalExceptionHandler.cs
   Extensions/        ResultExtensions.cs
 ```
+
+---
+
+## EXPLORATION_PROTOCOL
+
+DEFAULT: disabled
+
+TRIGGER_IF:
+- Compile error indicates contract divergence
+- Task requires pattern not covered by DECISION tables
+- Bounded context boundary is ambiguous
+- File path doesn't match PATH_PATTERNS
+
+BOUND: Glob target directory only · Read 1 file per task label · No grep loops · No full-tree scan

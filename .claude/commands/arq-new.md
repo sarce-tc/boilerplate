@@ -1,71 +1,128 @@
-# /arq-new — Checklist para nuevo aggregate (end-to-end)
+# ARQ_NEW — Aggregate scaffold protocol
 
-> **Antes de empezar:** leer los archivos de referencia de la fila correspondiente en `/arquitectura`.
-> El aggregate `Example` (EF) y `Order` (Dapper) son la implementación canónica — el código nuevo debe leerse igual que el existente.
-
----
-
-## Principio generic-first
-
-Aplicar en este orden antes de crear cualquier interfaz o clase nueva:
-
-1. ¿Alcanza `IReadRepository<T>`? → **Inyectarlo directamente.** No crear `IMyEntityReadRepository`.
-2. ¿Alcanza `IUnitOfWork.WriteRepository`? → **Usarlo directamente.** No crear `IMyEntityWriteRepository`.
-3. Solo si la superficie genérica no alcanza → crear la interfaz específica del aggregate y justificarlo en un comentario.
+## SKILL_IDENTITY
+PURPOSE: Deterministic end-to-end scaffold for a new aggregate
+REFERENCE: /arquitectura (routing) · CLAUDE.md (invariants)
+DEFAULT: no exploration · expand templates · evaluate conditionals · execute
 
 ---
 
-## Path A — EF Core
-
-Referencia: `Example` + `ExampleItem`. Leer `ExampleDbContext.cs`, `CreateExampleCommandHandler.cs` y `UpdateExampleCommandHandler.cs` antes de implementar.
-
-### Checklist en orden
-
-- [ ] **`Domain/Entities/MyEntity.cs`** — `sealed`, private setters, constructor factory, métodos de dominio que lanzan `DomainException`. Si tiene hijos: `private readonly List<MyEntityItem> _items = []` + `public IReadOnlyList<MyEntityItem> Items => _items.AsReadOnly()`.
-- [ ] **`Domain/Entities/MyEntityItem.cs`** (si aplica) — `sealed`, constructor `internal` (solo el aggregate root puede instanciarla), `private set` en todo, método de transición de estado `internal`.
-- [ ] **`ExampleDbContext.cs`** — añadir `DbSet<MyEntity>` (+ `DbSet<MyEntityItem>` si aplica). Configurar en `OnModelCreating`: `HasIndex(PublicId).IsUnique()`, `HasMaxLength`, `IsRequired`, `HasMany/WithOne/FK/Cascade`. Si tiene hijos: `Navigation(e => e.Items).HasField("_items").UsePropertyAccessMode(PropertyAccessMode.Field)` para que el snapshot change-tracker detecte Add/Remove via domain methods.
-- [ ] **Migración** — `dotnet ef migrations add Add_MyEntity --project Microservice.Infrastructure --startup-project Microservice.API` → `dotnet ef database update ...`.
-- [ ] **`Application/Contracts/Persistence/EF/IMyEntityReadRepository.cs`** — **solo si** el handler necesita queries que no existen en `IReadRepository<T>` (ej. `ExistsByNameAsync` con ILike case-insensitive). El eager-loading de hijos **no** justifica esta interfaz — usar `GetEntityAsync` con `includeProperties:[e => e.Children]`. Si no hay lógica específica del aggregate: omitir.
-- [ ] **`Application/Contracts/Persistence/EF/IMyEntityWriteRepository.cs`** — **solo si** el aggregate necesita métodos de escritura fuera de la superficie genérica. Si no: omitir. Body vacío es válido si solo necesitas la distinción de tipo.
-- [ ] **`Application/Contracts/Persistence/EF/IUnitOfWork.cs`** — añadir `IMyEntityWriteRepository MyEntityWrite { get; }` **solo si** se creó `IMyEntityWriteRepository`. Si la superficie genérica alcanza, el handler usa `WriteRepository` directamente.
-- [ ] **`Application/DTOs/MyEntity/`** — DTOs de salida. Usar `record` o `class` según si se necesita igualdad estructural.
-- [ ] **`Application/Mapping/MappingProfile.cs`** — `CreateMap<CreateMyEntityCommand, MyEntity>().ConstructUsing(src => new MyEntity(src.Name, ...))`.
-- [ ] **`Application/Features/MyEntityEF/Commands/`** — un handler por command. Seguir los patrones de `Example`:
-  - **Create**: mapper → `AddItem()` por hijo → `AddAsync` → `SaveChanges`.
-  - **Update (PUT)**: `GetEntityAsync(includeProperties:[e=>e.Items], disableTracking:false)` → domain methods → `Update` → `SaveChanges`.
-  - **Update (PATCH)**: `GetEntityAsync(disableTracking:true)` → domain methods → `UpdateFields([x=>x.Campo])` → `SaveChanges`.
-  - **Delete individual**: `GetEntityAsync` → `Delete` → `SaveChanges` (cascade en DB elimina hijos).
-  - **Delete bulk**: `WriteRepository.DeleteManyAsync(predicado)` → `SaveChanges` (sin cargar entidades).
-- [ ] **`Application/Features/MyEntityEF/Queries/`** — inyectar `IReadRepository<MyEntity>` directamente. Para cargar hijos usar `GetEntityAsync(predicate, includeProperties:[e => e.Children])` — no crear método específico en el repositorio. Solo inyectar `IMyEntityReadRepository` si el query necesita lógica que no existe en la superficie genérica (ej. ILike, joins complejos).
-- [ ] **`Infrastructure/Repositories/EF/MyEntityWriteRepository.cs`** — `sealed`, hereda `LINQRepository<MyEntity>`, implementa `IMyEntityWriteRepository` (si fue creada). Agregar métodos solo si son necesarios.
-- [ ] **`Infrastructure/Repositories/EF/MyEntityReadRepository.cs`** — `sealed`, hereda `LINQRepository<MyEntity>`, implementa `IMyEntityReadRepository` (si fue creada). `GetWithChildrenAsync` usa `.Include(e => e.Children)`. `ExistsByNameAsync` usa `Microsoft.EntityFrameworkCore.EF.Functions.ILike` (fully qualified para evitar conflicto de namespace).
-- [ ] **`Infrastructure/Repositories/EF/UnitOfWork.cs`** — si se creó `IMyEntityWriteRepository`: añadir `private MyEntityWriteRepository? _myEntity;` + lazy property. Exponer por ambas interfaces apuntando a la misma instancia.
-- [ ] **`InfrastuctureServiceRegistration.cs`** — registrar `IMyEntityReadRepository → MyEntityReadRepository` (si fue creada). El UoW EF ya está registrado globalmente.
-- [ ] **`API/Controllers/MyEntityController.cs`** — controller delgado: recibe request, envía a MediatR, mapea `Result` → `IActionResult` con `ResultExtensions`.
-
-### Comentarios obligatorios en cada clase
-
-Cada clase del end-to-end debe tener un comentario que indique:
-- Qué patrón demuestra (`// PATRÓN —`).
-- La regla generic-first aplicada (por qué se creó o no una interfaz específica).
-- Cuándo el agente debe replicar esta clase para una nueva entidad vs cuándo omitirla.
+## GLOBAL_INVARIANTS
+- generic-first at every step — evaluate before creating specific contracts
+- `DomainException` enforces invariants — no guard duplication in Application layer
+- `sealed` · file-scoped namespaces · collection expressions `[]` · primary constructors
+- `SaveChangesAsync` = implicit EF TX — no explicit TX block in EF handlers
+- Explicit TX (try/catch/rollback) ONLY in Dapper command handlers
 
 ---
 
-## Path B — Dapper
+## MODE: EF_CORE
 
-Referencia: `Order`. Leer `OrderReadRepository.cs`, `OrderWriteRepository.cs` y `UnitOfWork.cs` (Dapper) antes de implementar.
+ARCHETYPE: Example + ExampleItem
+READ_FIRST: `CreateExampleCommandHandler.cs` · `UpdateExampleCommandHandler.cs`
 
-### Checklist en orden
+### EXECUTION_SEQUENCE
 
-- [ ] `Domain/Entities/MyEntity.cs` — constructor factory, métodos que lanzan `DomainException`.
-- [ ] `Application/Contracts/Persistence/Dapper/IMyEntityReadRepository.cs`
-- [ ] `Application/Contracts/Persistence/Dapper/IMyEntityWriteRepository.cs`
-- [ ] Añadir `IMyEntityWriteRepository MyEntityWrite { get; }` en `Application/Contracts/Persistence/Dapper/IUnitOfWork.cs`.
-- [ ] `Application/DTOs/MyEntity/` — `class` con public setters para Dapper multi-map.
-- [ ] `Application/Features/MyEntity/Commands/` y `Queries/`.
-- [ ] `Infrastructure/Repositories/Dapper/MyEntityReadRepository.cs`.
-- [ ] `Infrastructure/Repositories/Dapper/MyEntityWriteRepository.cs` — dos constructores: DI sin TX / UoW con `IDbConnection + IDbTransaction`.
-- [ ] Lazy property en `Infrastructure/Repositories/Dapper/UnitOfWork.cs`: `_myEntity ??= new MyEntityWriteRepository(_connection!, _transaction!)`.
-- [ ] Registrar en `InfrastuctureServiceRegistration.cs` — 2 líneas.
-- [ ] `API/Controllers/MyEntityController.cs`.
+```
+1. DOMAIN
+   Entity:   sealed · private setters · factory constructor · DomainException
+   Children: _items = [] · IReadOnlyList<TItem> Items => _items.AsReadOnly()
+   Item:     sealed · internal constructor · private setters · internal state methods
+
+2. DB_CONTEXT
+   Add:      DbSet<MyEntity> [+ DbSet<MyEntityItem>]
+   Config:   HasIndex(e=>e.PublicId).IsUnique() · HasMaxLength · IsRequired
+   Children: Navigation(e=>e.Items).HasField("_items").UsePropertyAccessMode(Field)
+   Migrate:  dotnet ef migrations add Add_MyEntity --project Infrastructure --startup API
+             dotnet ef database update --project Infrastructure --startup API
+
+3. CONTRACTS  [conditional — evaluate each independently]
+   IMyEntityReadRepository:  ONLY IF → ILike · complex join · filter not in IReadRepository<T>
+   IMyEntityWriteRepository: ONLY IF → write operation not in IWriteRepository<T>
+   IUnitOfWork:              ADD property ONLY IF IMyEntityWriteRepository created
+
+4. APPLICATION
+   DTOs:       record (structural equality) | class (Dapper multi-map)
+   Mapping:    MappingProfile → CreateMap<Command, Entity>().ConstructUsing(…)
+   Commands:   [see COMMAND_PATTERNS]
+   Queries:    [see QUERY_PATTERNS]
+   Validators: FluentValidation · auto-registered via IPipelineBehavior scan
+
+5. INFRA_REPOS  [conditional — create only if contract created in §3]
+   ReadRepository:  sealed · LINQRepository<MyEntity> · IMyEntityReadRepository
+   WriteRepository: sealed · LINQRepository<MyEntity> · IMyEntityWriteRepository
+
+6. DI
+   ReadRepository:  1 line InfrastructureServiceRegistration (if created)
+   WriteRepository: instantiated inside UoW only — not registered directly
+   Service:         1 line InfrastructureServiceRegistration (if I{Service} created)
+
+7. API
+   Controller: thin · MediatR.Send · result.ToActionResult()
+```
+
+### COMMAND_PATTERNS
+
+| Type | Load | Domain | Persist |
+|---|---|---|---|
+| Create | — | `new MyEntity(…)` · `AddItem()` per child | `AddAsync` → `SaveChanges` |
+| Update full (PUT) | `GetEntityAsync(includeProperties, disableTracking:false)` | `UpdateName / AddItem / RemoveItem` | `Update` → `SaveChanges` |
+| Update partial (PATCH) | `GetEntityAsync(disableTracking:true)` | domain methods | `UpdateFields([x=>x.Prop])` → `SaveChanges` |
+| Delete | `GetEntityAsync` | — | `Delete` → `SaveChanges` |
+| Delete bulk | — | — | `WriteRepository.DeleteManyAsync(predicate)` → `SaveChanges` |
+| Update bulk | — | — | `WriteRepository.UpdateManyAsync(predicate, values)` → `SaveChanges` |
+| Domain service op | load both aggregates (tracked) | `IDomainService.Method()` | `Update × N` → `SaveChanges` |
+
+### QUERY_PATTERNS
+
+| Type | Inject | Load |
+|---|---|---|
+| By publicId (scalar) | `IReadRepository<T>` or `IExampleService` | `GetEntityAsync(x=>x.PublicId==id)` |
+| Paginated | `IReadRepository<T>` | `GetListPaginatedAsync(page, size, predicate)` |
+| With children | `IReadRepository<T>` or `IExampleService` | `GetEntityAsync(predicate, includeProperties:[e=>e.Children])` |
+| Child collection | `IReadRepository<T>` | `GetEntityAsync(includeProperties)` → map `entity.Items` |
+| Single child | `IReadRepository<T>` | `GetEntityAsync(includeProperties)` → `Items.FirstOrDefault(i=>i.PublicId==id)` |
+| Computed summary | `IExampleService` | `FindWithItemsAsync` → construct DTO manually (skip mapper if computed fields) |
+
+---
+
+## MODE: DAPPER
+
+ARCHETYPE: Example (Dapper) — target path Features/ExamplesDapper/
+READ_FIRST: `Infrastructure/Repositories/Dapper/ReadRepository.cs` · `WriteRepository.cs` · `UnitOfWork.cs`
+
+### EXECUTION_SEQUENCE
+
+```
+1. DOMAIN      — same as EF §1
+2. CONTRACTS   — IMyEntityReadRepository + IMyEntityWriteRepository (always required — no generic surface)
+                 IUnitOfWork → add: IMyEntityWriteRepository MyEntityWrite { get; }
+3. APPLICATION — DTOs with public setters · Commands · Queries · Validators
+4. REPOS
+   Read:  SQL SELECT · MatchNamesWithUnderscores=true · multi-map for joins
+   Write: TWO constructors — DI (no TX) | UoW (IDbConnection + IDbTransaction)
+          pass _transaction explicitly on every SQL call
+5. UoW:  lazy: _myEntity ??= new MyEntityWriteRepository(_connection!, _transaction!)
+6. DI:   2 lines InfrastructureServiceRegistration
+7. API:  same as EF §7
+```
+
+### TX_PATTERN (Dapper only)
+
+```csharp
+await unitOfWork.BeginTransactionAsync(ct);
+try { /* ... */ await unitOfWork.CommitAsync(ct); }
+catch { await unitOfWork.RollbackAsync(ct); throw; }
+```
+
+---
+
+## EXPLORATION_PROTOCOL
+
+DEFAULT: disabled
+
+TRIGGER_IF:
+- Step requires pattern not in COMMAND_PATTERNS / QUERY_PATTERNS
+- Compile error indicates contract divergence
+
+BOUND: Read 1 file from /arquitectura REFERENCE_FILES matching task label
