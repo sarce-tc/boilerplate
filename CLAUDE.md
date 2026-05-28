@@ -1,195 +1,208 @@
-# Guía del agente — Boilerplate .NET 10 Microservices
-
-Instrucciones que el agente **debe seguir siempre** en este repositorio.
-
-Cuando una feature no encaja en los patrones documentados, el agente **no se bloquea**:
-toma el camino de desarrollo siguiendo las convenciones, patrones y librerías del stack.
-Solo pregunta al piloto si hay un cambio estructural, una librería nueva o dos enfoques
-válidos sin criterio claro para elegir. Ver sección **"Casos fuera del patrón"** en `/arquitectura`.
+# AGENT EXECUTION POLICY — .NET 10 Microservices Runtime
 
 ---
 
-## 1. Manejo de excepciones
+## RUNTIME_DIRECTIVE
 
-- **`GlobalExceptionHandler` es el único punto de manejo de excepciones** en el pipeline.
-- **`try-catch` está prohibido en lógica de negocio**, con una única excepción justificada:
+- Architectural runtime: `/arquitectura` (ARQ state machine) — source of truth for routing, reference loading, and state transitions.
+- Topology is stable. Namespaces are stable. Do not rediscover either.
+- Default mode: execute. Escalate only under conditions defined in ESCALATION_RULES.
+- ARQ internals (REFERENCE_FILES, PATH_PATTERNS, DECISION_REPOSITORY) are not duplicated here.
 
+---
+
+## GLOBAL_INVARIANTS
+
+- `DomainException` → `GlobalExceptionHandler` → HTTP 409 · log Warning
+- `try-catch` forbidden in handlers except at the Dapper UoW TX boundary (see EXECUTION_RULES)
+- Domain invariants live in the entity — never duplicated as guards in Application layer
+- `sealed` · file-scoped namespaces · primary constructors · collection expressions `[]`
+- One handler per command/query
+- Handlers orchestrate only — no business logic
+- FluentValidation registered as `IPipelineBehavior` — never inside handlers
+- `IReadRepository<T>` is always used without a transaction
+- `IWriteRepository<T>` is always used inside `IUnitOfWork`
+- `public_id` (GUID) is the only identifier exposed in the API — never internal `id` (int/bigint)
+- Pagination mandatory on all collection-returning endpoints
+
+---
+
+## EXECUTION_RULES
+
+### EF Core commands
+```
+load entity (tracked)  →  call domain method  →  repo.Update  →  SaveChangesAsync
+```
+- `SaveChangesAsync` = implicit transaction — no explicit TX block
+
+### Dapper commands (writes)
 ```csharp
-// CORRECTO — único try-catch permitido en handlers
 await unitOfWork.BeginTransactionAsync(ct);
 try
 {
-    await unitOfWork.Orders.UpdateAsync(order, ct);
+    await unitOfWork.ExamplesWrite.OperationAsync(…, ct);
     await unitOfWork.CommitAsync(ct);
 }
 catch
 {
     await unitOfWork.RollbackAsync(ct);
-    throw;   // siempre re-lanzar
+    throw;
 }
 ```
+- `throw` is mandatory — never swallow
 
-- Si durante el desarrollo surge un caso donde parece necesario un `try-catch` fuera del patrón UoW, **el agente debe preguntar al piloto** antes de implementarlo.
-
----
-
-## 2. DDD (Domain-Driven Design)
-
-- Las **invariantes de dominio** viven en la entidad/aggregate root, nunca en el application layer.
-- Los métodos de dominio lanzan **`DomainException`** (definida en `Microservice.Domain/Exceptions/`) cuando se viola una regla de negocio.
-- `GlobalExceptionHandler` mapea `DomainException` → **HTTP 409 Conflict**, log en `Warning`.
-- **No duplicar reglas de dominio** en el application layer como guards previos. La entidad es la única fuente de verdad.
-
-```csharp
-// INCORRECTO — guard en el handler duplica la regla del dominio
-if (order.Status == OrderStatus.Completed)
-    return Result.Failure(Error.Conflict("..."));
-order.Cancel();
-
-// CORRECTO — el dominio lanza DomainException, GlobalExceptionHandler la gestiona
-order.Cancel();  // lanza DomainException si la regla no se cumple
+### Domain method call
+```
+entity.DomainMethod()   // throws DomainException if invariant violated
+                        // GlobalExceptionHandler maps → HTTP 409
+                        // no pre-check, no guard, no Result.Failure before the call
 ```
 
-- `DomainException` se llama **antes** de abrir una transacción UoW cuando sea posible, así no se necesita rollback.
+### Reference loading
+- ARQ S3_LOAD reads exactly 1 reference file — do not read additional files unless S_ERROR requires it
+- S_ERROR budget: 1 Glob max + 1 Read max
 
 ---
 
-## 3. Principios SOLID
+## FORBIDDEN_PATTERNS
 
-- **S** — cada clase tiene una única responsabilidad. Handlers solo orquestan; la lógica de negocio está en el dominio.
-- **O** — extender comportamiento mediante nuevas clases / implementaciones, no modificando las existentes.
-- **L** — los repositorios concretos son sustituibles por sus interfaces sin cambiar el comportamiento del caller.
-- **I** — interfaces pequeñas y específicas (`IOrderReadRepository`, `IOrderWriteRepository`, no un `IRepository` monolítico).
-- **D** — depender de abstracciones (`IUnitOfWork`, `IOrderReadRepository`), nunca de implementaciones concretas en Application.
+### Exploration
+- Repository Glob/grep loops to discover structure
+- Full-tree scans (`**/*.cs` without a specific target)
+- Namespace rediscovery
+- Reading files not specified by ARQ REFERENCE_FILES for the current operation
 
----
+### Handler code
+- Business logic inside handlers
+- `try-catch` outside the Dapper UoW TX boundary
+- Domain rule duplication as guards (e.g., `if (entity.Status == X) return Failure(…)` before calling a domain method)
+- Direct instantiation of handlers
+- Validation logic inside handlers (use `IPipelineBehavior`)
 
-## 4. Convención de código
+### Queries
+- Lazy loading / navigation property access without explicit `includeProperties`
+- N+1 patterns — use JOIN, `includeProperties`, or batch
+- Unbounded collection queries without pagination
 
-- **C# 14 / .NET 10**: usar primary constructors, `record`, `required`, collection expressions `[]`, `nameof`, `ArgumentException.ThrowIfNullOrWhiteSpace`.
-- Nombres en **PascalCase** para tipos y miembros públicos; **camelCase** con `_` prefix para campos privados (`_items`, `_connection`).
-- **`sealed`** en clases que no están diseñadas para heredar (handlers, repositorios concretos, excepciones).
-- XML doc (`///`) en toda clase y método público que forme parte de la API pública del proyecto.
-- **Snake_case en SQL** para compatibilidad con Dapper `MatchNamesWithUnderscores = true`.
-- Prefijo de sección en comentarios inline: `// ── 1. Descripción ─────`.
+### API
+- Exposing internal `id` (int/bigint) in responses or route parameters
+- `try-catch` in controllers
 
----
-
-## 5. Versiones y características modernas
-
-| Capa | Tecnología | Versión | Notas |
-|---|---|---|---|
-| Runtime | .NET | 10 | TFM `net10.0` |
-| Lenguaje | C# | 14 | Primary constructors, collection expressions |
-| ORM | EF Core | 10 | Migraciones, DbContext, snake_case config explícita |
-| Micro-ORM | Dapper | 2.1.x | `MatchNamesWithUnderscores`, multi-map, RETURNING |
-| RDBMS | PostgreSQL | 16 | Docker `postgres:16`, Npgsql |
-| Mediator | MediatR | 14.1 | `IRequestHandler<TRequest, TResponse>` |
-| Autenticación | JwtBearer | 10.0.x | HS256, `OnChallenge` → ProblemDetails |
-| OpenAPI | Swashbuckle + Microsoft.OpenApi | 10.x / 2.x | `OpenApiSecuritySchemeReference`, `AddSecurityRequirement(Func<>)` |
-| Jobs | System.Threading.Channels | built-in | `Channel<T>`, `BackgroundService`, scoped DI por item |
-| Observabilidad | OpenTelemetry | 1.15.x | Traces + metrics, OTLP/Console |
-| Tests | xUnit + Moq + FluentAssertions | latest | — |
-
-- Usar siempre las APIs más modernas disponibles en la versión del stack declarada.
-- **No agregar paquetes obsoletos** o que dupliquen funcionalidad ya cubierta por el framework.
+### Infrastructure
+- Adding NuGet packages not already in the stack (→ ESCALATION_RULES)
+- Introducing a new architecture layer or cross-cutting abstraction without escalation
 
 ---
 
-## 6. Arquitectura limpia de microservicios
+## DECISION_RULES
 
-Capas y reglas de dependencia estrictas:
+### Repository selection (generic-first — evaluate in order)
+
+| When | Use |
+|---|---|
+| Predicate filter · exists · count · paginate | `IReadRepository<T>` |
+| Read with children | `IReadRepository<T>` + `includeProperties:[e=>e.Children]` |
+| Bulk delete/update without entity load | `IUnitOfWork.WriteRepository.DeleteManyAsync / UpdateManyAsync` |
+| Write, change-tracked | `IUnitOfWork.ExamplesWrite` |
+| ILike · complex join · filter not on generic surface | `IMyEntityReadRepository` (specific) |
+| Write operation not on generic surface | `IMyEntityWriteRepository` (specific) |
+
+### Service selection
+
+| When | Use | Namespace |
+|---|---|---|
+| Standard lookup by publicId | `IExampleService.FindAsync / FindWithItemsAsync` | `Application.Services` |
+| Custom predicate / projection | `IReadRepository<T>` | — |
+| Command — tracked scalar | `IExampleService.FindTrackedAsync` | `Application.Services` |
+| Cross-aggregate operation | `IExampleService.TransferItem / MergeInto` | `Application.Contracts.Interfaces` |
+
+### DomainException timing
+- Validate domain rules before opening a TX when possible — avoids needing rollback
+
+---
+
+## ESCALATION_RULES
+
+Escalate to the user **only** when:
+
+- A feature requires a NuGet package not present in the stack
+- A structural change is required (new layer, new cross-cutting contract, new infrastructure component)
+- Two valid approaches exist with no criterion to decide between them
+- A security or performance risk is detected that existing patterns do not cover
+
+Do **not** escalate for:
+- Ambiguous naming
+- Missing DTO fields
+- Whether to add XML doc
+- Standard CQRS wiring decisions covered by ARQ
+
+---
+
+## VALIDATION_RULES
+
+After every file write:
 
 ```
-Domain          ← sin dependencias externas
-Application     ← depende de Domain
-Infrastructure  ← depende de Application
-API             ← depende de Application (no de Infrastructure directamente)
+dotnet test --no-restore -v q
 ```
 
-- **Domain**: entidades, value objects, `DomainException`, interfaces de dominio.
-- **Application**: contratos (`IUnitOfWork`, `IOrderReadRepository`…), DTOs, handlers CQRS, Result pattern, validadores.
-- **Infrastructure**: implementaciones de repos (EF + Dapper), UoW, jobs, DbContext, migraciones.
-- **API**: controllers, middleware, extensiones de registro, `GlobalExceptionHandler`.
+- 0 build errors · 0 new test failures → DONE
+- Any failure → S_ERROR: 1 Glob + 1 Read + diagnose → resume
 
 ---
 
-## 7. Escalabilidad y rendimiento
+## PERFORMANCE_RULES
 
-- **No N+1**: queries con JOIN o batch, nunca carga lazy.
-- **Dapper para lectura** cuando la query es conocida y el rendimiento importa; EF para escritura con migraciones.
-- **`Channel<T>` unbounded con `SingleReader = true`** para el job worker — evita contención.
-- **Paginación obligatoria** en cualquier endpoint que devuelva colecciones (`pageSize` + `cursor` o `offset`).
-- **Rate limiting** por IP configurado en `appsettings.json` (sliding window).
-- **Idempotency-Key** en POST/PUT/PATCH para operaciones que deben ser seguras ante reintento.
-- **Índices en `public_id`** (GUID externo) — nunca exponer el `id` interno (int/bigint) en la API.
+- No N+1 — use `includeProperties`, JOIN, or batch
+- Pagination: `GetListPaginatedAsync(currentPage, pageSize, predicate)` — mandatory for any unbounded result set
+- Prefer Dapper for known-shape reads where performance is critical; EF for writes with migrations
+- `Channel<T>` unbounded + `SingleReader = true` for background job workers
+- Index on `public_id` — defined in DbContext, not assumed
 
 ---
 
-## 8. CQRS
+## STACK_CONSTRAINTS
 
-- **Commands** en `Features/{Aggregate}/Commands/{Action}/` — modifican estado, devuelven `Result` o `Result<T>`.
-- **Queries** en `Features/{Aggregate}/Queries/{Action}/` — solo leen, nunca modifican estado.
-- Un handler por command/query (`sealed class XCommandHandler : IRequestHandler<XCommand, Result>`).
-- **Validación con FluentValidation** registrada como `IPipelineBehavior` — nunca dentro del handler.
-- Los handlers no contienen lógica de negocio; orquestan llamadas al dominio, repos y UoW.
+| Component | Technology | Version |
+|---|---|---|
+| Runtime | .NET | 10 (`net10.0`) |
+| Language | C# | 14 |
+| ORM | EF Core | 10 |
+| Micro-ORM | Dapper | 2.1.x · `MatchNamesWithUnderscores = true` |
+| RDBMS | PostgreSQL | 16 · Npgsql |
+| Mediator | MediatR | 14.1 |
+| Auth | JwtBearer | 10.0.x · HS256 |
+| OpenAPI | Swashbuckle + Microsoft.OpenApi | 10.x / 2.x |
+| Jobs | System.Threading.Channels | built-in |
+| Observability | OpenTelemetry | 1.15.x |
+| Tests | xUnit + Moq + FluentAssertions | latest |
 
----
-
-## 9. Repository y Unit of Work
-
-- **Usar los métodos genéricos del repositorio base primero** (`GetByPublicIdAsync`, `AddAsync`, `UpdateAsync`).
-- **Añadir métodos específicos solo cuando el caso de uso lo justifica** (e.g. `GetWithItemsAsync` para JOIN, `AddItemAsync` para `order_items`).
-- **`IReadRepository<T>`** para queries — siempre sin transacción.
-- **`IWriteRepository<T>`** dentro de `IUnitOfWork` — siempre dentro de transacción.
-- **Dos constructores en `WriteRepository`**: uno para DI (sin TX) y uno para UoW (con `IDbConnection` + `IDbTransaction`).
-- Dapper pasa `_transaction` explícitamente en cada llamada SQL.
-
----
-
-## 10. MediatR
-
-- Todo command/query se envía mediante `IMediator.Send()` desde el controller.
-- Los controllers son **delgados**: reciben el request, envían a MediatR, mapean `Result` a `IActionResult`.
-- Usar `IPipelineBehavior<,>` para cross-cutting concerns: logging, validación, performance.
-- No instanciar handlers directamente; siempre a través del pipeline de MediatR.
+- Use the most modern API available within the declared stack version
+- Do not add packages that duplicate existing framework functionality
 
 ---
 
-## 11. Tests
+## TESTING_RULES
 
-- **xUnit** como framework; **Moq** para mocks; **FluentAssertions** para aserciones.
-- Estructura de carpetas en `Microservice.Test` espeja la estructura del proyecto que prueba.
-- Tests unitarios para handlers, validadores y lógica de dominio.
-- Los tipos usados como parámetro genérico de mocks (`IValidator<T>`) deben ser **`public`** a nivel de namespace — Moq no puede crear proxies de tipos privados o anidados con FluentValidation strong-named.
-- Naming convention: `MetodoQuePrueba_Escenario_ResultadoEsperado`.
-
----
-
-## 12. Docker
-
-- La base de datos de desarrollo corre en Docker (`postgres:16`).
-- El `docker-compose.yml` define el servicio `postgres` con healthcheck.
-- Las migraciones se aplican con `dotnet ef database update` apuntando al container.
-- Las connection strings en `appsettings.Development.json` usan `localhost` + puerto mapeado del container.
+- Framework: xUnit · Mocks: Moq · Assertions: FluentAssertions
+- `Microservice.Test` folder structure mirrors the project under test
+- Scope: unit tests for handlers, validators, and domain logic
+- Naming: `Method_Scenario_ExpectedResult`
+- Types used as generic mock parameters (e.g. `IValidator<T>`) must be `public` at namespace level — Moq cannot proxy private or nested types under FluentValidation strong-named assemblies
+- Do not test infrastructure wiring (DI registration, DbContext migrations) in unit tests
 
 ---
 
-## Regla general del agente
+## CODE_CONVENTIONS
 
-El agente opera en dos modos según el caso:
+| Rule | Value |
+|---|---|
+| Public types / members | PascalCase |
+| Private fields | `_camelCase` |
+| SQL identifiers | snake_case |
+| Inline comment prefix | `// ── N. Description ─────` |
+| XML doc | Required on all public API surface |
+| Async | All I/O methods async — `Async` suffix · `CancellationToken ct` parameter |
 
-**Patrón conocido** (cubierto por esta guía o por `/arquitectura`):
-→ Implementar directamente. No preguntar, no dudar.
-
-**Patrón nuevo o ambiguo** (no documentado):
-→ Tomar el camino de desarrollo de forma autónoma, respetando:
-  - Las convenciones de código del stack (C# 14, naming, async, DI).
-  - Las librerías ya presentes (nunca introducir una nueva sin consultar).
-  - Rendimiento y buenas prácticas del stack actual.
-  - El principio de menor sorpresa: el código nuevo debe leerse como el código existente.
-→ Preguntar al piloto **solo si**:
-  - La feature requiere una librería que no está en el stack.
-  - El diseño implica un cambio estructural (nueva capa, nuevo contrato, cambio de arquitectura).
-  - Hay dos enfoques válidos sin criterio claro para elegir entre ellos.
-  - Se detecta un riesgo de seguridad o rendimiento que el patrón existente no cubre.
+- `ArgumentException.ThrowIfNullOrWhiteSpace` over manual null guards
+- `record` for DTOs (structural equality) · `class` for Dapper multi-map DTOs (public setters required)
