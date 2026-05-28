@@ -1,101 +1,41 @@
 using Microservice.Domain.Common;
 
 namespace Microservice.Application.Contracts.Persistence.EF;
-
-/// <summary>
-/// Repositorio para operaciones SQL que CONSULTAN datos (SELECT)
-/// Solo lectura - NUNCA modifica datos
-/// .NET 10 + C# 14
-/// 
-/// ✅ Para: SELECT, Stored Procedures que retornan datos sin modificar
-/// ❌ NO para: INSERT, UPDATE, DELETE
-/// </summary>
+// Contrato de consulta SQL EF Core — SELECT y stored procedures que solo leen datos.
+// FromSqlAsync: ejecuta FormattableString SELECT y retorna entidades mapeadas desde DbSet.
+// Usar cuando LINQRepository no es suficiente para expresar la consulta con predicados.
 public interface ISqlQueryRepository<T> where T : BaseDomainModel
 {
-    /// <summary>
-    /// Ejecuta SELECT SQL raw directamente
-    /// ✅ GARANTIZADO: Solo lectura, no modifica datos
-    /// 
-    /// Ejemplos:
-    /// </summary>
     Task<IReadOnlyList<T>> FromSqlAsync(
         FormattableString sql,
         CancellationToken cancellationToken = default);
 }
 
-/// <summary>
-/// Repositorio para operaciones SQL que MODIFICAN datos (INSERT, UPDATE, DELETE)
-/// AQUÍ van ExecuteSqlRaw / ExecuteSqlInterpolated cuando modifican
-/// .NET 10 + C# 14
-/// 
-/// ✅ Para: INSERT, UPDATE, DELETE directo, EXEC sp_Procedure
-/// ❌ NO para: SELECT puro
-/// </summary>
+// Contrato de comando SQL EF Core — INSERT, UPDATE, DELETE y stored procedures que modifican datos.
+// ExecuteSqlAsync: ejecuta FormattableString que modifica datos; retorna filas afectadas.
+// ExecuteStoredProcedureAsync: llama a stored procedure que modifica datos; retorna filas afectadas.
+// ExecuteSqlWithResultAsync: ejecuta UPDATE/INSERT con RETURNING y retorna las entidades resultantes.
+// Siempre usar FormattableString ($"...{var}") — EF parameteriza automáticamente para prevenir SQL injection.
 public interface ISqlCommandRepository<T> where T : BaseDomainModel
 {
-    /// <summary>
-    /// Ejecuta comando SQL raw que MODIFICA datos
-    /// Para: INSERT, UPDATE, DELETE directo
-    /// Retorna: Número de registros afectados
-    /// 
-    /// Ejemplos:
-    /// </summary>
     Task<int> ExecuteSqlAsync(
         FormattableString sql,
         CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Ejecuta un stored procedure que MODIFICA datos
-    /// Para: EXEC sp_InsertData, EXEC sp_BatchUpdate, EXEC sp_Archive, etc
-    /// Retorna: Número de registros afectados
-    /// 
-    /// Ejemplos:
-    /// </summary>
     Task<int> ExecuteStoredProcedureAsync(
         FormattableString sql,
         CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Ejecuta comando SQL que MODIFICA y retorna los registros resultantes
-    /// Para: UPDATE...RETURNING (PostgreSQL) o OUTPUT (SQL Server)
-    /// Retorna: Los registros modificados/insertados
-    /// 
-    /// Ejemplos (PostgreSQL):
-    /// var updated = await sqlCommandRepo.ExecuteSqlWithResultAsync(
-    ///     $@"UPDATE Products 
-    ///        SET Price = Price * {factor}
-    ///        WHERE Category = {category}
-    ///        RETURNING *");
-    /// </summary>
     Task<IReadOnlyList<T>> ExecuteSqlWithResultAsync(
         FormattableString sql,
         CancellationToken cancellationToken = default);
 }
 
-/// <summary>
-/// Repositorio SQL completo - lectura Y escritura en una transacción
-/// Para operaciones transaccionales complejas
-/// .NET 10 + C# 14
-/// 
-/// ✅ Para: Múltiples operaciones en transacción con rollback automático
-/// </summary>
+// Contrato SQL completo EF Core — combina ISqlQueryRepository<T> e ISqlCommandRepository<T>.
+// ExecuteInTransactionAsync: ejecuta múltiples operaciones SQL en una TX explícita con rollback automático;
+//   recibe un delegate que recibe el propio ISqlRepository<T> para encadenar reads + writes en la misma TX.
 public interface ISqlRepository<T> : ISqlQueryRepository<T>, ISqlCommandRepository<T> where T : BaseDomainModel
 {
-    /// <summary>
-    /// Ejecutar múltiples operaciones SQL en una TRANSACCIÓN
-    /// Si algo falla → TODO se revierte automáticamente ✅
-    /// 
-    /// Ejemplo:
-    /// var result = await sqlRepository.ExecuteInTransactionAsync(async repo =>
-    /// {
-    ///     var items = await repo.FromSqlAsync($"SELECT...");
-    ///     foreach (var item in items)
-    ///     {
-    ///         await repo.ExecuteSqlAsync($"UPDATE...");
-    ///     }
-    ///     return items.Count;
-    /// });
-    /// </summary>
     Task<TResult> ExecuteInTransactionAsync<TResult>(
         Func<ISqlRepository<T>, Task<TResult>> operation,
         CancellationToken cancellationToken = default);

@@ -29,35 +29,6 @@
 
 ## EXECUTION_RULES
 
-### EF Core commands
-```
-load entity (tracked)  →  call domain method  →  repo.Update  →  SaveChangesAsync
-```
-- `SaveChangesAsync` = implicit transaction — no explicit TX block
-
-### Dapper commands (writes)
-```csharp
-await unitOfWork.BeginTransactionAsync(ct);
-try
-{
-    await unitOfWork.ExamplesWrite.OperationAsync(…, ct);
-    await unitOfWork.CommitAsync(ct);
-}
-catch
-{
-    await unitOfWork.RollbackAsync(ct);
-    throw;
-}
-```
-- `throw` is mandatory — never swallow
-
-### Domain method call
-```
-entity.DomainMethod()   // throws DomainException if invariant violated
-                        // GlobalExceptionHandler maps → HTTP 409
-                        // no pre-check, no guard, no Result.Failure before the call
-```
-
 ### Reference loading
 - ARQ S3_LOAD reads exactly 1 reference file — do not read additional files unless S_ERROR requires it
 - S_ERROR budget: 1 Glob max + 1 Read max

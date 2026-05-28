@@ -23,6 +23,9 @@ public class MappingProfile : Profile
         CreateMap<Example, GetExampleWithProjectionDto>();
         CreateMap<Example, ExecuteSqlWithResultDto>();
         CreateMap<Example, GetAllExamplesDapperDto>();
+        CreateMap<Example, GetExampleByPublicIdDapperDto>();
+        CreateMap<Example, GetExamplesPaginatedDapperDto>();
+        CreateMap<Example, SearchExamplesByNameDapperDto>();
 
     }
 }
