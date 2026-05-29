@@ -1,5 +1,5 @@
 using Microservice.Application.Models;
-using Microservice.Domain.Common;
+using Microservice.Domain.ValueObjects;
 using System.Linq.Expressions;
 
 namespace Microservice.Application.Contracts.Persistence.EF;

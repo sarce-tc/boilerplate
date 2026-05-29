@@ -1,6 +1,6 @@
 using Dapper;
 using Microservice.Application.Contracts.Persistence.Dapper;
-using Microservice.Domain.Common;
+using Microservice.Domain.ValueObjects;
 using Npgsql;
 using System.Data;
 

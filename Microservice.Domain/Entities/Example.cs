@@ -1,5 +1,5 @@
-using Microservice.Domain.Common;
 using Microservice.Domain.Exceptions;
+using Microservice.Domain.ValueObjects;
 
 namespace Microservice.Domain.Entities;
 

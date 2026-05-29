@@ -32,7 +32,7 @@ public class GetAllExamplesDapperQueryHandlerTests
             new("Test1", "Desc1") { Id = 1 },
             new("Test2", "Desc2") { Id = 2 },
         };
-        var dtos = new List<GetAllExamplesDapperDto>
+        var dtos = new List<GetAllExamplesDto>
         {
             new(Guid.NewGuid(), "Test1", "Desc1", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow),
             new(Guid.NewGuid(), "Test2", "Desc2", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow),
@@ -42,7 +42,7 @@ public class GetAllExamplesDapperQueryHandlerTests
             .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(examples);
         _mockMapper
-            .Setup(m => m.Map<IEnumerable<GetAllExamplesDapperDto>>(examples))
+            .Setup(m => m.Map<IEnumerable<GetAllExamplesDto>>(examples))
             .Returns(dtos);
 
         // Act
@@ -59,13 +59,13 @@ public class GetAllExamplesDapperQueryHandlerTests
         // Arrange
         var query = new GetAllExamplesDapperQuery();
         List<Example>                   emptyEntities = [];
-        List<GetAllExamplesDapperDto>   emptyDtos     = [];
+        List<GetAllExamplesDto>   emptyDtos     = [];
 
         _mockReadRepository
             .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(emptyEntities);
         _mockMapper
-            .Setup(m => m.Map<IEnumerable<GetAllExamplesDapperDto>>(emptyEntities))
+            .Setup(m => m.Map<IEnumerable<GetAllExamplesDto>>(emptyEntities))
             .Returns(emptyDtos);
 
         // Act
@@ -86,7 +86,7 @@ public class GetAllExamplesDapperQueryHandlerTests
             .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         _mockMapper
-            .Setup(m => m.Map<IEnumerable<GetAllExamplesDapperDto>>(It.IsAny<IEnumerable<Example>>()))
+            .Setup(m => m.Map<IEnumerable<GetAllExamplesDto>>(It.IsAny<IEnumerable<Example>>()))
             .Returns([]);
 
         // Act
@@ -107,7 +107,7 @@ public class GetAllExamplesDapperQueryHandlerTests
             .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(examples);
         _mockMapper
-            .Setup(m => m.Map<IEnumerable<GetAllExamplesDapperDto>>(It.IsAny<IEnumerable<Example>>()))
+            .Setup(m => m.Map<IEnumerable<GetAllExamplesDto>>(It.IsAny<IEnumerable<Example>>()))
             .Returns([]);
 
         // Act
@@ -115,7 +115,7 @@ public class GetAllExamplesDapperQueryHandlerTests
 
         // Assert
         _mockMapper.Verify(
-            m => m.Map<IEnumerable<GetAllExamplesDapperDto>>(It.IsAny<IEnumerable<Example>>()),
+            m => m.Map<IEnumerable<GetAllExamplesDto>>(It.IsAny<IEnumerable<Example>>()),
             Times.Once);
     }
 

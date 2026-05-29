@@ -1,7 +1,7 @@
 using Dapper;
 using Microservice.Application.Contracts.Persistence.Dapper;
 using Microservice.Application.Models;
-using Microservice.Domain.Common;
+using Microservice.Domain.ValueObjects;
 using Npgsql;
 using System.Data;
 

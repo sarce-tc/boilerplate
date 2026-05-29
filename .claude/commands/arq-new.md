@@ -40,8 +40,8 @@ ACTION: edit `{INFRA_SRC}\Persistence\ExampleDbContext.cs`
         + `DbSet<MyEntity>` [+ `DbSet<MyEntityItem>`]
         + `HasIndex(e=>e.PublicId).IsUnique()` · `HasMaxLength` · `IsRequired`
         [if children] + `Navigation(e=>e.Items).HasField("_items").UsePropertyAccessMode(Field)`
-        run: dotnet ef migrations add Add_MyEntity --project Microservice.Infrastructure --startup Microservice.API
-             dotnet ef database update --project Microservice.Infrastructure --startup Microservice.API
+        run: dotnet ef migrations add Add_MyEntity --project Microservice.Infrastructure --startup-project Microservice.API
+             dotnet ef database update --project Microservice.Infrastructure --startup-project Microservice.API
 NEXT:   → S4_CONTRACTS
 
 ## STATE: S4_CONTRACTS
@@ -84,7 +84,8 @@ NEXT:   → S9_VALIDATE
 # ── DAPPER PATH ──────────────────────────────────────────────────────────────
 
 ## STATE: S1_DAPPER
-ACTION: Read dapper.base-read + dapper.base-write + dapper.uow-concrete from /arquitectura REFERENCE_FILES
+ACTION: Read dapper.base-read + dapper.base-write + dapper.uow-concrete + dapper.cmd.create
+        from /arquitectura REFERENCE_FILES (dapper.cmd.create = canonical TX handler shape)
 NEXT:   → S2_DOMAIN [same as EF]
 
 ## STATE: S3_DAPPER_CONTRACTS

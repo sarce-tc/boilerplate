@@ -1,4 +1,4 @@
-using Microservice.Domain.Common;
+using Microservice.Domain.ValueObjects;
 
 namespace Microservice.Application.Contracts.Persistence.Dapper;
 // Contrato de escritura genérico Dapper para cualquier aggregate.

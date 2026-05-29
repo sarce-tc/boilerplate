@@ -1,5 +1,5 @@
 using Microservice.Application.Models;
-using Microservice.Domain.Common;
+using Microservice.Domain.ValueObjects;
 
 namespace Microservice.Application.Contracts.Persistence.Dapper;
 // Contrato de lectura genérico Dapper para cualquier aggregate.

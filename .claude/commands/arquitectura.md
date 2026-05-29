@@ -1,10 +1,12 @@
 # ARQ — Architectural State Machine
 
-PROJECT_ROOT: C:\Users\SantiagoArce\source\repos\boilerplate
-APP_SRC:      {PROJECT_ROOT}\Microservice.Application
-INFRA_SRC:    {PROJECT_ROOT}\Microservice.Infrastructure
-API_SRC:      {PROJECT_ROOT}\Microservice.API
-DOMAIN_SRC:   {PROJECT_ROOT}\Microservice.Domain
+PROJECT_ROOT: the repository root = current working directory.
+              Do NOT hard-code an absolute path — it varies per machine/user.
+              All paths below are relative to PROJECT_ROOT and resolve from the CWD.
+APP_SRC:      Microservice.Application
+INFRA_SRC:    Microservice.Infrastructure
+API_SRC:      Microservice.API
+DOMAIN_SRC:   Microservice.Domain
 
 ---
 
@@ -79,9 +81,20 @@ NEXT:   → S2_WARM  [session_temperature == warm]
 | result-ext | `{API_SRC}\Extensions\ResultExtensions.cs` |
 | error-handler | `{API_SRC}\ExceptionHandling\GlobalExceptionHandler.cs` |
 | dapper.uow | `{APP_SRC}\Contracts\Persistence\Dapper\IUnitOfWork.cs` |
+| dapper.read-contract | `{APP_SRC}\Contracts\Persistence\Dapper\IExampleReadRepository.cs` |
+| dapper.write-contract | `{APP_SRC}\Contracts\Persistence\Dapper\IExampleWriteRepository.cs` |
 | dapper.base-read | `{INFRA_SRC}\Repositories\Dapper\ReadRepository.cs` |
 | dapper.base-write | `{INFRA_SRC}\Repositories\Dapper\WriteRepository.cs` |
 | dapper.uow-concrete | `{INFRA_SRC}\Repositories\Dapper\UnitOfWork.cs` |
+| dapper.read-repo | `{INFRA_SRC}\Repositories\Dapper\ExampleReadRepository.cs` |
+| dapper.write-repo | `{INFRA_SRC}\Repositories\Dapper\ExampleWriteRepository.cs` |
+| dapper.cmd.create | `{APP_SRC}\Features\ExamplesDapper\Commands\CreateExampleDapper\CreateExampleDapperCommandHandler.cs` |
+| dapper.cmd.update | `{APP_SRC}\Features\ExamplesDapper\Commands\UpdateExampleDapper\UpdateExampleDapperCommandHandler.cs` |
+| dapper.cmd.delete | `{APP_SRC}\Features\ExamplesDapper\Commands\DeleteExampleDapper\DeleteExampleDapperCommandHandler.cs` |
+| dapper.query.by-id | `{APP_SRC}\Features\ExamplesDapper\Queries\GetExampleByPublicIdDapper\GetExampleByPublicIdDapperQueryHandler.cs` |
+| dapper.query.paginated | `{APP_SRC}\Features\ExamplesDapper\Queries\GetExamplesPaginatedDapper\GetExamplesPaginatedDapperQueryHandler.cs` |
+| dapper.query.search | `{APP_SRC}\Features\ExamplesDapper\Queries\SearchExamplesByNameDapper\SearchExamplesByNameDapperQueryHandler.cs` |
+| dapper.controller | `{API_SRC}\Controllers\ExamplesDapperController.cs` |
 | svc.lookup | `{APP_SRC}\Services\IExampleService.cs` · `{APP_SRC}\Services\ExampleService.cs` |
 | svc.domain | Glob `{INFRA_SRC}\Services\` → read matching file |
 
@@ -147,7 +160,7 @@ Controllers:  {API_SRC}\Controllers\{Aggregate}Controller.cs
     Persistence\Dapper\  IUnitOfWork.cs IReadRepository.cs IWriteRepository.cs
   Features\
     ExamplesEF\      Commands\ Queries\
-    ExamplesDapper\  Commands\ Queries\  ← planned
+    ExamplesDapper\  Commands\ Queries\
   Mapping\  MappingProfile.cs
   Services\  IExampleService.cs ExampleService.cs  ← lookup services (query helpers; implemented in Application)
 
@@ -157,11 +170,11 @@ Controllers:  {API_SRC}\Controllers\{Aggregate}Controller.cs
     EF\     LINQRepository.cs SqlRepository.cs
             ExampleWriteRepository.cs ExampleReadRepository.cs UnitOfWork.cs
     Dapper\ ReadRepository.cs WriteRepository.cs UnitOfWork.cs
-            ExampleReadRepository.cs ExampleWriteRepository.cs  ← planned
+            ExampleReadRepository.cs ExampleWriteRepository.cs
   Services\  {Service}.cs
 
 {API_SRC}\
-  Controllers\       ExamplesEFController.cs ExamplesDapperController.cs  ← planned
+  Controllers\       ExamplesEFController.cs ExamplesDapperController.cs
   ExceptionHandling\ GlobalExceptionHandler.cs
   Extensions\        ResultExtensions.cs
 ```

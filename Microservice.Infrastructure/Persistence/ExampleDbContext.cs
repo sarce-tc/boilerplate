@@ -1,5 +1,5 @@
-using Microservice.Domain.Common;
 using Microservice.Domain.Entities;
+using Microservice.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 
 namespace Microservice.Infrastructure.Persistence;

@@ -1,7 +1,7 @@
 using Microservice.Application.Common.Validation;
 using Microservice.Application.Contracts.Persistence.EF;
 using Microservice.Application.Models;
-using Microservice.Domain.Common;
+using Microservice.Domain.ValueObjects;
 using Microservice.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;

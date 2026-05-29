@@ -1,4 +1,4 @@
-using Microservice.Domain.Common;
+using Microservice.Domain.ValueObjects;
 
 namespace Microservice.Application.Contracts.Persistence.EF;
 // Contrato de consulta SQL EF Core — SELECT y stored procedures que solo leen datos.

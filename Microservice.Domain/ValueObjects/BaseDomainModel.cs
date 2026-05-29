@@ -1,4 +1,4 @@
-namespace Microservice.Domain.Common;
+namespace Microservice.Domain.ValueObjects;
 // ═══════════════════════════════════════════════════════════════════════
 // AGENT — Base class for all domain entities.
 //

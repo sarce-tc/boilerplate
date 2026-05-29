@@ -1,4 +1,4 @@
-using Microservice.Domain.Common;
+using Microservice.Domain.ValueObjects;
 
 namespace Microservice.Application.Contracts.Persistence.Dapper;
 public interface IRepository<T> where T : BaseDomainModel

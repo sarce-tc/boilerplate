@@ -1,5 +1,5 @@
 using Microservice.Application.Contracts.Persistence.EF;
-using Microservice.Domain.Common;
+using Microservice.Domain.ValueObjects;
 using Microservice.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
