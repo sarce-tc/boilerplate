@@ -1,0 +1,159 @@
+@Microservice_HostAddress = https://localhost:44394
+@version = v1
+@token = 
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImp0aSI6IjA3ZGYyNzlmLTg4NjgtNDhhNS04MmFlLTdkM2NmNThjYjJjNCIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJhZG1pbiIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiZXhwIjoxNzgwMDc1NTc1LCJpc3MiOiJtaWNyb3NlcnZpY2UtYXBpIiwiYXVkIjoibWljcm9zZXJ2aWNlLWNsaWVudHMifQ.HkN6aXGrvomNq5gMqRIpn3ys9KNHUWE8BYi3HhoHHAI
+@efPublicId = bf2daba7-3173-4d55-97e2-b108d86401ca
+@dapperPublicId = 89486e99-1550-461a-a955-ea0ab1af9417
+
+### ===== AUTH ===== token JWT (dev). Ejecuta esto PRIMERO y pega "token" en @token
+POST {{Microservice_HostAddress}}/api/{{version}}/auth/token
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### ===== EF ===== Crear un Example (con items). Pega el Guid en @efPublicId
+POST {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Demo EF",
+  "description": "Creado desde Microservice.http",
+  "items": [
+    { "label": "Primer item", "quantity": 3 },
+    { "label": "Segundo item", "quantity": 1 }
+  ]
+}
+
+### EF - Obtener paginado
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF?page=1&size=10
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### EF - Obtener todos
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/all
+Authorization: Bearer {{token}}
+
+### EF - Contar
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/count
+Authorization: Bearer {{token}}
+
+### EF - Proyección de campos
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/projection
+Authorization: Bearer {{token}}
+
+### EF - Obtener por PublicId
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/{{efPublicId}}
+Authorization: Bearer {{token}}
+
+### EF - ¿Existe?
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/{{efPublicId}}/exists
+Authorization: Bearer {{token}}
+
+### EF - Summary (con estadísticas de items)
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/{{efPublicId}}/summary
+Authorization: Bearer {{token}}
+
+### EF - Con items
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/{{efPublicId}}/with-items
+Authorization: Bearer {{token}}
+
+### EF - Items del Example
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/{{efPublicId}}/items
+Authorization: Bearer {{token}}
+
+### EF - Proyección de un solo Example
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/{{efPublicId}}/projection
+Authorization: Bearer {{token}}
+
+### EF - Actualizar (PUT completo)
+PUT {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/{{efPublicId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Demo EF actualizado",
+  "description": "Nueva descripción"
+}
+
+### EF - Actualizar solo campos (estilo PATCH)
+PUT {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/{{efPublicId}}/fields
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Solo el nombre cambia"
+}
+
+### EF - Reactivar
+PUT {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/{{efPublicId}}/activate
+Authorization: Bearer {{token}}
+
+### EF - Actualizar varios (batch)
+PUT {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+["{{efPublicId}}"]
+
+### EF - Borrar
+DELETE {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/{{efPublicId}}
+Authorization: Bearer {{token}}
+
+### EF - Borrar varios (batch)
+DELETE {{Microservice_HostAddress}}/api/{{version}}/ExamplesEF/batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+["{{efPublicId}}"]
+
+### ===== DAPPER ===== Crear un Example. Pega el Guid en @dapperPublicId
+POST {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Demo Dapper",
+  "description": "Creado desde Microservice.http"
+}
+
+### DAPPER - Obtener paginado
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper?page=1&size=10
+Authorization: Bearer {{token}}
+
+### DAPPER - Obtener todos
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper/all
+Authorization: Bearer {{token}}
+
+### DAPPER - Contar
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper/count
+Authorization: Bearer {{token}}
+
+### DAPPER - Buscar por nombre (ILike)
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper/search?name=Demo
+Authorization: Bearer {{token}}
+
+### DAPPER - ¿Existe por nombre? (exacto)
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper/exists-by-name?name=Demo
+Authorization: Bearer {{token}}
+
+### DAPPER - Obtener por PublicId
+GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper/{{dapperPublicId}}
+Authorization: Bearer {{token}}
+
+### DAPPER - Actualizar
+PUT {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper/{{dapperPublicId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Demo Dapper actualizado",
+  "description": "Nueva descripción"
+}
+
+### DAPPER - Borrar
+DELETE {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper/{{dapperPublicId}}
+Authorization: Bearer {{token}}

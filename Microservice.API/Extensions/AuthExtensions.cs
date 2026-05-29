@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -79,7 +80,15 @@ public static class AuthExtensions
                 };
             });
 
-        services.AddAuthorization();
+        // Secure-by-default: every endpoint requires an authenticated user unless
+        // it is explicitly marked [AllowAnonymous] (e.g. AuthController, health checks).
+        // Without a FallbackPolicy the JWT is configured but never enforced.
+        services.AddAuthorization(options =>
+        {
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+        });
 
         return services;
     }

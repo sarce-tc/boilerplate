@@ -27,14 +27,14 @@ public static class HealthCheckExtensions
         {
             Predicate = check => check.Tags.Contains("live"),
             ResponseWriter = WriteJsonResponse
-        });
+        }).AllowAnonymous();
 
         // Readiness: can the service handle traffic? (DB connectivity, etc.)
         app.MapHealthChecks("/health/ready", new HealthCheckOptions
         {
             Predicate = check => check.Tags.Contains("ready"),
             ResponseWriter = WriteJsonResponse
-        });
+        }).AllowAnonymous();
 
         return app;
     }
