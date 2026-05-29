@@ -1,6 +1,6 @@
 using MediatR;
 using Microservice.Application.Common.Results;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.EF;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.GetExampleWithProjection;
 // PATRÓN — Obtiene un único aggregate Example proyectando solo los campos necesarios en SQL.

@@ -1,5 +1,6 @@
 using AutoMapper;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.Dapper;
+using Microservice.Application.DTOs.EF;
 using Microservice.Application.Features.ExamplesEF.Commands.CreateExample;
 using Microservice.Domain.Entities;
 
@@ -16,16 +17,16 @@ public class MappingProfile : Profile
         CreateMap<Example, GetExampleWithItemsDto>();
         CreateMap<Example, GetExampleByIdDto>();
         CreateMap<Example, GetExampleByPredicateDto>();
-        CreateMap<Example, GetAllExamplesDto>();
+        CreateMap<Example, DTOs.EF.GetAllExamplesDto>();
         CreateMap<Example, GetExamplesFromSqlDto>();
-        CreateMap<Example, GetExamplesPaginatedDto>();
+        CreateMap<Example, DTOs.EF.GetExamplesPaginatedDto>();
         CreateMap<Example, GetExamplesWithProjectionDto>();
         CreateMap<Example, GetExampleWithProjectionDto>();
         CreateMap<Example, ExecuteSqlWithResultDto>();
-        CreateMap<Example, GetAllExamplesDapperDto>();
-        CreateMap<Example, GetExampleByPublicIdDapperDto>();
-        CreateMap<Example, GetExamplesPaginatedDapperDto>();
-        CreateMap<Example, SearchExamplesByNameDapperDto>();
+        CreateMap<Example, DTOs.Dapper.GetAllExamplesDto>();
+        CreateMap<Example, GetExampleByPublicIdDto>();
+        CreateMap<Example, DTOs.Dapper.GetExamplesPaginatedDto>();
+        CreateMap<Example, SearchExamplesByNameDto>();
 
     }
 }

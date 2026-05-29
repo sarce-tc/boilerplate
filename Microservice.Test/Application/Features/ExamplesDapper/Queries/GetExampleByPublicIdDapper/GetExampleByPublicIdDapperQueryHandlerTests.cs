@@ -3,7 +3,7 @@ using FluentAssertions;
 using Moq;
 using Microservice.Application.Common.Results;
 using Microservice.Application.Contracts.Persistence.Dapper;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.Dapper;
 using Microservice.Application.Features.ExamplesDapper.Queries.GetExampleByPublicIdDapper;
 using Microservice.Domain.Entities;
 
@@ -29,13 +29,13 @@ public class GetExampleByPublicIdDapperQueryHandlerTests
         var publicId = Guid.NewGuid();
         var query    = new GetExampleByPublicIdDapperQuery(publicId);
         var example  = new Example("Sample", "Desc") { Id = 1, PublicId = publicId };
-        var dto      = new GetExampleByPublicIdDapperDto(publicId, "Sample", "Desc", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
+        var dto      = new GetExampleByPublicIdDto(publicId, "Sample", "Desc", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
 
         _mockReadRepository
             .Setup(r => r.GetByPublicIdAsync(publicId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(example);
         _mockMapper
-            .Setup(m => m.Map<GetExampleByPublicIdDapperDto>(example))
+            .Setup(m => m.Map<GetExampleByPublicIdDto>(example))
             .Returns(dto);
 
         // Act
@@ -77,8 +77,8 @@ public class GetExampleByPublicIdDapperQueryHandlerTests
             .Setup(r => r.GetByPublicIdAsync(publicId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(example);
         _mockMapper
-            .Setup(m => m.Map<GetExampleByPublicIdDapperDto>(It.IsAny<Example>()))
-            .Returns(new GetExampleByPublicIdDapperDto(publicId, "Name", null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow));
+            .Setup(m => m.Map<GetExampleByPublicIdDto>(It.IsAny<Example>()))
+            .Returns(new GetExampleByPublicIdDto(publicId, "Name", null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow));
 
         // Act
         await _handler.Handle(query, CancellationToken.None);
@@ -99,13 +99,13 @@ public class GetExampleByPublicIdDapperQueryHandlerTests
             .Setup(r => r.GetByPublicIdAsync(publicId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(example);
         _mockMapper
-            .Setup(m => m.Map<GetExampleByPublicIdDapperDto>(example))
-            .Returns(new GetExampleByPublicIdDapperDto(publicId, "Name", "Desc", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow));
+            .Setup(m => m.Map<GetExampleByPublicIdDto>(example))
+            .Returns(new GetExampleByPublicIdDto(publicId, "Name", "Desc", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow));
 
         // Act
         await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        _mockMapper.Verify(m => m.Map<GetExampleByPublicIdDapperDto>(example), Times.Once);
+        _mockMapper.Verify(m => m.Map<GetExampleByPublicIdDto>(example), Times.Once);
     }
 }

@@ -2,7 +2,7 @@ using AutoMapper;
 using FluentAssertions;
 using Moq;
 using Microservice.Application.Contracts.Persistence.Dapper;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.Dapper;
 using Microservice.Application.Features.ExamplesDapper.Queries.SearchExamplesByNameDapper;
 using Microservice.Domain.Entities;
 
@@ -31,7 +31,7 @@ public class SearchExamplesByNameDapperQueryHandlerTests
             new("Widget A", null) { Id = 1 },
             new("Widget B", null) { Id = 2 },
         };
-        var dtos = new List<SearchExamplesByNameDapperDto>
+        var dtos = new List<SearchExamplesByNameDto>
         {
             new(Guid.NewGuid(), "Widget A", null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow),
             new(Guid.NewGuid(), "Widget B", null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow),
@@ -41,7 +41,7 @@ public class SearchExamplesByNameDapperQueryHandlerTests
             .Setup(r => r.SearchByNameAsync("Widget", It.IsAny<CancellationToken>()))
             .ReturnsAsync(examples);
         _mockMapper
-            .Setup(m => m.Map<IEnumerable<SearchExamplesByNameDapperDto>>(examples))
+            .Setup(m => m.Map<IEnumerable<SearchExamplesByNameDto>>(examples))
             .Returns(dtos);
 
         // Act
@@ -62,7 +62,7 @@ public class SearchExamplesByNameDapperQueryHandlerTests
             .Setup(r => r.SearchByNameAsync("NonExistent", It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         _mockMapper
-            .Setup(m => m.Map<IEnumerable<SearchExamplesByNameDapperDto>>(It.IsAny<IEnumerable<Example>>()))
+            .Setup(m => m.Map<IEnumerable<SearchExamplesByNameDto>>(It.IsAny<IEnumerable<Example>>()))
             .Returns([]);
 
         // Act
@@ -84,7 +84,7 @@ public class SearchExamplesByNameDapperQueryHandlerTests
             .Setup(r => r.SearchByNameAsync(searchTerm, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         _mockMapper
-            .Setup(m => m.Map<IEnumerable<SearchExamplesByNameDapperDto>>(It.IsAny<IEnumerable<Example>>()))
+            .Setup(m => m.Map<IEnumerable<SearchExamplesByNameDto>>(It.IsAny<IEnumerable<Example>>()))
             .Returns([]);
 
         // Act
@@ -105,7 +105,7 @@ public class SearchExamplesByNameDapperQueryHandlerTests
             .Setup(r => r.SearchByNameAsync("Part", It.IsAny<CancellationToken>()))
             .ReturnsAsync(examples);
         _mockMapper
-            .Setup(m => m.Map<IEnumerable<SearchExamplesByNameDapperDto>>(It.IsAny<IEnumerable<Example>>()))
+            .Setup(m => m.Map<IEnumerable<SearchExamplesByNameDto>>(It.IsAny<IEnumerable<Example>>()))
             .Returns([]);
 
         // Act
@@ -113,7 +113,7 @@ public class SearchExamplesByNameDapperQueryHandlerTests
 
         // Assert
         _mockMapper.Verify(
-            m => m.Map<IEnumerable<SearchExamplesByNameDapperDto>>(It.IsAny<IEnumerable<Example>>()),
+            m => m.Map<IEnumerable<SearchExamplesByNameDto>>(It.IsAny<IEnumerable<Example>>()),
             Times.Once);
     }
 }

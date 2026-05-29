@@ -1,7 +1,7 @@
 using MediatR;
 using Microservice.API.Extensions;
 using Microservice.Application.Common.Results;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.EF;
 using Microservice.Application.Features.ExamplesEF.Commands.CreateExample;
 using Microservice.Application.Features.ExamplesEF.Queries.GetAllExample;
 using Microservice.Application.Features.ExamplesEF.Queries.GetExampleByPredicate;

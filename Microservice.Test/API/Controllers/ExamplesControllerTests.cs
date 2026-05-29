@@ -3,7 +3,7 @@ using Moq;
 using MediatR;
 using Microservice.API.Controllers;
 using Microservice.Application.Common.Results;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.EF;
 using Microservice.Application.Features.ExamplesEF.Commands.CreateExample;
 using Microservice.Application.Features.ExamplesEF.Queries.GetExampleByPredicate;
 using Microsoft.AspNetCore.Mvc;

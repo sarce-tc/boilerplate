@@ -2,7 +2,7 @@ using AutoMapper;
 using FluentAssertions;
 using Moq;
 using Microservice.Application.Contracts.Persistence.Dapper;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.Dapper;
 using Microservice.Application.Features.ExamplesDapper.Queries.GetExamplesPaginatedDapper;
 using Microservice.Application.Models;
 using Microservice.Domain.Entities;
@@ -29,7 +29,7 @@ public class GetExamplesPaginatedDapperQueryHandlerTests
         var query     = new GetExamplesPaginatedDapperQuery(1, 10);
         var examples  = new List<Example> { new("Alpha", null) { Id = 1 }, new("Beta", null) { Id = 2 } };
         var paged     = new PagedResult<Example>(examples, 2, 1, 10);
-        var dtos      = new List<GetExamplesPaginatedDapperDto>
+        var dtos      = new List<GetExamplesPaginatedDto>
         {
             new(Guid.NewGuid(), "Alpha", null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow),
             new(Guid.NewGuid(), "Beta",  null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow),
@@ -39,7 +39,7 @@ public class GetExamplesPaginatedDapperQueryHandlerTests
             .Setup(r => r.GetListPaginatedAsync(1, 10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(paged);
         _mockMapper
-            .Setup(m => m.Map<IEnumerable<GetExamplesPaginatedDapperDto>>(examples))
+            .Setup(m => m.Map<IEnumerable<GetExamplesPaginatedDto>>(examples))
             .Returns(dtos);
 
         // Act
@@ -66,7 +66,7 @@ public class GetExamplesPaginatedDapperQueryHandlerTests
             .Setup(r => r.GetListPaginatedAsync(currentPage, pageSize, It.IsAny<CancellationToken>()))
             .ReturnsAsync(paged);
         _mockMapper
-            .Setup(m => m.Map<IEnumerable<GetExamplesPaginatedDapperDto>>(It.IsAny<IEnumerable<Example>>()))
+            .Setup(m => m.Map<IEnumerable<GetExamplesPaginatedDto>>(It.IsAny<IEnumerable<Example>>()))
             .Returns([]);
 
         // Act
@@ -90,7 +90,7 @@ public class GetExamplesPaginatedDapperQueryHandlerTests
             .Setup(r => r.GetListPaginatedAsync(3, 20, It.IsAny<CancellationToken>()))
             .ReturnsAsync(paged);
         _mockMapper
-            .Setup(m => m.Map<IEnumerable<GetExamplesPaginatedDapperDto>>(It.IsAny<IEnumerable<Example>>()))
+            .Setup(m => m.Map<IEnumerable<GetExamplesPaginatedDto>>(It.IsAny<IEnumerable<Example>>()))
             .Returns([]);
 
         // Act
@@ -112,7 +112,7 @@ public class GetExamplesPaginatedDapperQueryHandlerTests
             .Setup(r => r.GetListPaginatedAsync(1, 10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(paged);
         _mockMapper
-            .Setup(m => m.Map<IEnumerable<GetExamplesPaginatedDapperDto>>(It.IsAny<IEnumerable<Example>>()))
+            .Setup(m => m.Map<IEnumerable<GetExamplesPaginatedDto>>(It.IsAny<IEnumerable<Example>>()))
             .Returns([]);
 
         // Act
@@ -120,7 +120,7 @@ public class GetExamplesPaginatedDapperQueryHandlerTests
 
         // Assert
         _mockMapper.Verify(
-            m => m.Map<IEnumerable<GetExamplesPaginatedDapperDto>>(It.IsAny<IEnumerable<Example>>()),
+            m => m.Map<IEnumerable<GetExamplesPaginatedDto>>(It.IsAny<IEnumerable<Example>>()),
             Times.Once);
     }
 }

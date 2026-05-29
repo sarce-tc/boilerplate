@@ -1,6 +1,6 @@
 using Microservice.Domain.Entities;
 
-namespace Microservice.Application.DTOs;
+namespace Microservice.Application.DTOs.EF;
 
 // Contrato de salida de la query GetExampleSummary.
 // El handler lo construye manualmente desde la entidad Example con Items cargados, calculando conteos

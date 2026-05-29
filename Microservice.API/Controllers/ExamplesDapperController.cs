@@ -1,7 +1,7 @@
 using Asp.Versioning;
 using MediatR;
 using Microservice.API.Extensions;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.Dapper;
 using Microservice.Application.Features.ExamplesDapper.Commands.CreateExampleDapper;
 using Microservice.Application.Features.ExamplesDapper.Commands.DeleteExampleDapper;
 using Microservice.Application.Features.ExamplesDapper.Commands.UpdateExampleDapper;
@@ -36,7 +36,7 @@ public class ExamplesDapperController(IMediator mediator) : ControllerBase
     /// Returns: 200 OK with PagedResult
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(PagedResult<GetExamplesPaginatedDapperDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<GetExamplesPaginatedDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPaginated(
         [FromQuery] int page = 1,
         [FromQuery] int size = 10,
@@ -54,7 +54,7 @@ public class ExamplesDapperController(IMediator mediator) : ControllerBase
     /// Returns: 200 OK with all Examples
     /// </summary>
     [HttpGet("all")]
-    [ProducesResponseType(typeof(IEnumerable<GetAllExamplesDapperDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<Application.DTOs.Dapper.GetAllExamplesDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllExamples(CancellationToken cancellationToken = default)
     {
         var query = new GetAllExamplesDapperQuery();
@@ -89,7 +89,7 @@ public class ExamplesDapperController(IMediator mediator) : ControllerBase
     /// Returns: 200 OK with matching Examples collection
     /// </summary>
     [HttpGet("search")]
-    [ProducesResponseType(typeof(IEnumerable<SearchExamplesByNameDapperDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<SearchExamplesByNameDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SearchExamplesByName(
         [FromQuery] string name,
         CancellationToken cancellationToken = default)
@@ -128,7 +128,7 @@ public class ExamplesDapperController(IMediator mediator) : ControllerBase
     /// Error: 404 Not Found if not exists
     /// </summary>
     [HttpGet("{publicId:guid}")]
-    [ProducesResponseType(typeof(GetExampleByPublicIdDapperDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(GetExampleByPublicIdDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetExampleByPublicId(
         Guid publicId,

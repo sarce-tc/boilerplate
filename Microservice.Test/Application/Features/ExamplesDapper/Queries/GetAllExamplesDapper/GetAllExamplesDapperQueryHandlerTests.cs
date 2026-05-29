@@ -3,7 +3,7 @@ using FluentAssertions;
 using Moq;
 using Microservice.Application.Common.Results;
 using Microservice.Application.Contracts.Persistence.Dapper;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.Dapper;
 using Microservice.Application.Features.ExamplesDapper.Queries.GetAllExamplesDapper;
 using Microservice.Domain.Entities;
 

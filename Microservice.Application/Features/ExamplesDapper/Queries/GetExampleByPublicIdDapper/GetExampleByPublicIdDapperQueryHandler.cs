@@ -2,7 +2,7 @@ using AutoMapper;
 using MediatR;
 using Microservice.Application.Common.Results;
 using Microservice.Application.Contracts.Persistence.Dapper;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.Dapper;
 
 namespace Microservice.Application.Features.ExamplesDapper.Queries.GetExampleByPublicIdDapper;
 // PATRÓN — Recupera un único Example por su PublicId y lo proyecta a DTO de respuesta.
@@ -13,15 +13,15 @@ namespace Microservice.Application.Features.ExamplesDapper.Queries.GetExampleByP
 //     GetExampleByPublicIdDapperDto; el perfil de mapeo vive en MappingProfile.
 public sealed class GetExampleByPublicIdDapperQueryHandler(
     IExampleReadRepository readRepository,
-    IMapper mapper) : IRequestHandler<GetExampleByPublicIdDapperQuery, Result<GetExampleByPublicIdDapperDto>>
+    IMapper mapper) : IRequestHandler<GetExampleByPublicIdDapperQuery, Result<GetExampleByPublicIdDto>>
 {
-    public async Task<Result<GetExampleByPublicIdDapperDto>> Handle(
+    public async Task<Result<GetExampleByPublicIdDto>> Handle(
         GetExampleByPublicIdDapperQuery request, CancellationToken cancellationToken)
     {
         var example = await readRepository.GetByPublicIdAsync(request.PublicId, cancellationToken);
         if (example is null)
-            return Result<GetExampleByPublicIdDapperDto>.Failure(Error.NotFound($"Example with PublicId '{request.PublicId}' was not found."));
+            return Result<GetExampleByPublicIdDto>.Failure(Error.NotFound($"Example with PublicId '{request.PublicId}' was not found."));
 
-        return Result<GetExampleByPublicIdDapperDto>.Success(mapper.Map<GetExampleByPublicIdDapperDto>(example));
+        return Result<GetExampleByPublicIdDto>.Success(mapper.Map<GetExampleByPublicIdDto>(example));
     }
 }

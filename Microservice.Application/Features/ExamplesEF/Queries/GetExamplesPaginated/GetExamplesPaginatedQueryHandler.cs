@@ -2,7 +2,7 @@ using AutoMapper;
 using MediatR;
 using Microservice.Application.Common.Results;
 using Microservice.Application.Contracts.Persistence.EF;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.EF;
 using Microservice.Application.Models;
 using Microservice.Domain.Entities;
 

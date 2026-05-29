@@ -1,6 +1,6 @@
 using MediatR;
 using Microservice.Application.Common.Results;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.EF;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.ExecuteSqlWithResult;
 // PATRÓN — Ejecuta un SELECT SQL arbitrario provisto por el caller y mapea los resultados a DTO.

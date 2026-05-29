@@ -1,6 +1,6 @@
 using MediatR;
 using Microservice.Application.Common.Results;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.EF;
 using Microservice.Application.Services;
 using Microservice.Domain.Entities;
 

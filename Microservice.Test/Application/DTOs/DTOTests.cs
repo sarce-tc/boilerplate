@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.EF;
 
 namespace Microservice.Test.Application.DTOs;
 /// <summary>

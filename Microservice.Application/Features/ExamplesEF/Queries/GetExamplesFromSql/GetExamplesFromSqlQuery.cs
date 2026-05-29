@@ -1,6 +1,6 @@
 using MediatR;
 using Microservice.Application.Common.Results;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.EF;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.GetExamplesFromSql;
 // PATRÓN — Transporta el parámetro de filtro para la query SQL hardcoded en el handler.

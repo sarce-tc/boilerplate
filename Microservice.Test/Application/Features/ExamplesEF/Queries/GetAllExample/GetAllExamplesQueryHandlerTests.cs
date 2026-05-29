@@ -3,7 +3,7 @@ using Moq;
 using AutoMapper;
 using Microservice.Application.Common.Results;
 using Microservice.Application.Contracts.Persistence.EF;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.EF;
 using Microservice.Application.Features.ExamplesEF.Queries.GetAllExample;
 using Microservice.Domain.Entities;
 using System.Linq.Expressions;

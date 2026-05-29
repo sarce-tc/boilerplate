@@ -185,9 +185,56 @@ Unit tests cover handlers, validators, and domain logic. Naming convention: `Met
 
 ## AI agent navigation
 
-This codebase is structured for AI-assisted development. Two slash commands are available in Claude Code:
+This codebase is designed for **AI-assisted development**. The navigation system solves the core problem of AI agents in large codebases: too much context, wrong files read, inconsistent output.
 
-- **`/arquitectura`** — task-to-files router. Maps any development task to the exact reference files to read before coding.
-- **`/arq-new`** — 13-step checklist for adding a new aggregate end-to-end.
+### The problem it solves
 
-Key files carry `// AGENT ENTRY POINT` and `// REFERENCE IMPLEMENTATION` comments so agents can orient from any cold-start entry point.
+Without structure, an AI agent starting a new task either reads too many files (slow, expensive, dilutes focus) or too few (misses the established pattern and generates inconsistent code). The result is code that works but doesn't match the project's conventions, requiring human review and correction on every task.
+
+### How it works
+
+Three complementary layers keep agents oriented and consistent:
+
+**1. Task-to-files router (`/arquitectura`)**  
+A slash command that maps any development task directly to the exact files to read — no exploration, no guessing. The agent reads only what's relevant and starts from the correct pattern immediately.
+
+```
+Task: "add a query handler"
+→ read GetOrderByIdQueryHandler.cs · GetOrdersQueryHandler.cs
+→ implement following established pattern
+```
+
+**2. Reference implementation (Order aggregate)**  
+`Order` is the permanent canonical template for all patterns in this project: UoW, CQRS handlers, domain invariants, controller binding, Dapper read/write. New aggregates are built *from* Order, not from scratch. The pattern stays consistent across all aggregates regardless of who (human or agent) adds them.
+
+**3. AGENT ENTRY POINT comments**  
+Key reference files carry structured comments that surface non-obvious rules at the point of reading — without requiring the agent to have read other files first:
+
+```csharp
+// ═══════════════════════════════════════════════════════════════
+// AGENT ENTRY POINT — Reference query handler (single entity)
+// REFERENCE IMPLEMENTATION — plantilla para query handlers con join.
+//
+// Rules:
+//   - Inject IXReadRepository — never IUnitOfWork (read-only, no TX)
+//   - No try-catch — exceptions propagate to GlobalExceptionHandler
+//   - Collections always use PagedResult<T>
+//   - Project to DTO here, not in the repository
+```
+
+This means an agent can enter from any file and still discover the governing rules — no dependency on a separate docs file being in context.
+
+### Benefits
+
+| Without this system | With this system |
+|---|---|
+| Agent reads 15+ files to orient | Agent reads 2–4 targeted files |
+| Rules re-explained every session | Rules embedded in code, always in context |
+| Inconsistent output across agents/sessions | Output mirrors the reference implementation |
+| Human must review pattern compliance | Pattern is enforced at the reading stage |
+| Navigation skill grows with the codebase | Router is O(1) — points to patterns, not entities |
+
+### Commands
+
+- **`/arquitectura`** — task-to-files router. Run this at the start of any development task in a cold session.
+- **`/arq-new`** — 13-step end-to-end checklist for adding a new aggregate (domain entity → repository → handlers → controller → registration).

@@ -2,7 +2,7 @@ using AutoMapper;
 using MediatR;
 using Microservice.Application.Common.Results;
 using Microservice.Application.Contracts.Persistence.Dapper;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.Dapper;
 using Microservice.Application.Models;
 
 namespace Microservice.Application.Features.ExamplesDapper.Queries.GetExamplesPaginatedDapper;
@@ -15,20 +15,20 @@ namespace Microservice.Application.Features.ExamplesDapper.Queries.GetExamplesPa
 //     GetExamplesPaginatedDapperDto; el perfil de mapeo vive en MappingProfile.
 public sealed class GetExamplesPaginatedDapperQueryHandler(
     IExampleReadRepository readRepository,
-    IMapper mapper) : IRequestHandler<GetExamplesPaginatedDapperQuery, Result<PagedResult<GetExamplesPaginatedDapperDto>>>
+    IMapper mapper) : IRequestHandler<GetExamplesPaginatedDapperQuery, Result<PagedResult<GetExamplesPaginatedDto>>>
 {
-    public async Task<Result<PagedResult<GetExamplesPaginatedDapperDto>>> Handle(
+    public async Task<Result<PagedResult<GetExamplesPaginatedDto>>> Handle(
         GetExamplesPaginatedDapperQuery request, CancellationToken cancellationToken)
     {
         var paged = await readRepository.GetListPaginatedAsync(
             request.CurrentPage, request.PageSize, cancellationToken);
 
-        var mapped = new PagedResult<GetExamplesPaginatedDapperDto>(
-            mapper.Map<IEnumerable<GetExamplesPaginatedDapperDto>>(paged.Results),
+        var mapped = new PagedResult<GetExamplesPaginatedDto>(
+            mapper.Map<IEnumerable<GetExamplesPaginatedDto>>(paged.Results),
             paged.RowsCount,
             paged.CurrentPage,
             paged.PageSize);
 
-        return Result<PagedResult<GetExamplesPaginatedDapperDto>>.Success(mapped);
+        return Result<PagedResult<GetExamplesPaginatedDto>>.Success(mapped);
     }
 }

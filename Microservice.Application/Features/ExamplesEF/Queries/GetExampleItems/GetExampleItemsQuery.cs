@@ -1,6 +1,6 @@
 using MediatR;
 using Microservice.Application.Common.Results;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.EF;
 
 namespace Microservice.Application.Features.ExamplesEF.Queries.GetExampleItems;
 // PATRÓN — Obtiene la colección de hijos Items de un aggregate Example identificado por su PublicId.

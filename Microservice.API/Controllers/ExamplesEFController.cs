@@ -1,7 +1,7 @@
 using Asp.Versioning;
 using MediatR;
 using Microservice.API.Extensions;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.EF;
 using Microservice.Application.Features.ExamplesEF.Commands.ActivateExample;
 using Microservice.Application.Features.ExamplesEF.Commands.CreateExample;
 using Microservice.Application.Features.ExamplesEF.Commands.DeleteExample;

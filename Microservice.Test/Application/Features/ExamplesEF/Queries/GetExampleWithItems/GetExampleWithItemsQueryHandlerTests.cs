@@ -1,7 +1,7 @@
 using AutoMapper;
 using FluentAssertions;
 using Microservice.Application.Contracts.Persistence.EF;
-using Microservice.Application.DTOs;
+using Microservice.Application.DTOs.EF;
 using Microservice.Application.Features.ExamplesEF.Queries.GetExampleWithItems;
 using Microservice.Domain.Entities;
 using Moq;

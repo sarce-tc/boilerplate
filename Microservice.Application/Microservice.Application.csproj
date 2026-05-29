@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="DTOs\EF\" />
     <Folder Include="Features\ExamplesDapper\" />
   </ItemGroup>
 
