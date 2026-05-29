@@ -27,21 +27,44 @@ NEXT:   → S1_CLASSIFY
 
 ## STATE: S1_CLASSIFY
 GUARD:  tech + operation resolved
-ACTION: apply DECISION_REPOSITORY → emit repository_contract
-        apply DECISION_SERVICE    → emit service_contract
-        lookup REFERENCE_FILES[operation] → emit reference_path
+ACTION: La decisión va ANTES de cargar el ejemplar. El orden es obligatorio.
+        STEP 1 — DECIDIR repository_contract vía DECISION_REPOSITORY (es un BRANCH, no una nota).
+                 La superficie genérica es AMPLIA — agótala antes de considerar SPECIFIC:
+                   · Lecturas: CUALQUIER predicado, incluido `EF.Functions.ILike(e.Prop, x)` dentro
+                     del Expression; Include/eager-load; proyección; paginación; Exists; Count.
+                   · Escrituras: Add · Update · UpdateFields(PATCH) · Delete ·
+                     DeleteManyAsync(predicate) · UpdateManyAsync(filter, ExecuteUpdateAsync).
+                     → un UPDATE/DELETE set-based con filtro ILike ES GENÉRICO (UpdateManyAsync).
+                 Pregunta discriminante (responde SÍ solo si NO cabe en lo de arriba):
+                 «¿requiere SQL crudo · cláusula RETURNING · JOIN/subconsulta no expresable como
+                   predicate+Include · lógica de dominio multi-statement?»
+                   · no  → repository_contract = GENÉRICO  (`IReadRepository<T>` / `WriteRepository`)
+                   · sí  → repository_contract = ESPECÍFICO (`IMyEntityReadRepository` / `IMyEntityWriteRepository`)
+                 Excepción de CONVENCIÓN (opcional, NO necesidad): encapsular una consulta ILike
+                 reutilizable como método nombrado en el repo específico — es calidad, no capacidad.
+        STEP 2 — DECIDIR service_contract vía DECISION_SERVICE.
+        STEP 3 — SELECCIONAR reference_path = REFERENCE_FILES[operation, repository_contract].
+                 El ejemplar cargado DEBE coincidir con el contract de STEP 1:
+                 genérico → ejemplar genérico · específico → ejemplar específico.
+                 Cuando una operación tiene rama genérica y específica, elegir la fila que
+                 corresponde a la decisión — no la primera.
 NEXT:   → S2_WARM  [session_temperature == warm]
         → S3_LOAD   [session_temperature == cold]
 
 ### DECISION_REPOSITORY
-| Scenario | Contract |
-|---|---|
-| Read by predicate · paginate · exists · count | `IReadRepository<T>` |
-| Read with children | `IReadRepository<T>` + `includeProperties:[e=>e.Children]` |
-| Write, change-tracked | `IUnitOfWork.ExamplesWrite` or `WriteRepository` |
-| Bulk delete/update without loading | `IUnitOfWork.WriteRepository.DeleteManyAsync / UpdateManyAsync` |
-| ILike · complex join · business filter not in generic surface | `IMyEntityReadRepository` |
-| Custom write not in generic surface | `IMyEntityWriteRepository` |
+GUARD aplicado en S1_CLASSIFY STEP 1 — NO es tabla de consulta. Cada fila decide el `contract`
+Y la fila de REFERENCE_FILES que se cargará. Genérico y específico cargan ejemplares DISTINTOS.
+La superficie genérica es amplia: la mayoría de casos (incluido ILike y set-based) son GENÉRICOS.
+
+| Scenario | Contract | Ejemplar (REFERENCE_FILES) |
+|---|---|---|
+| Read por predicado (incl. `EF.Functions.ILike`) · paginate · exists · count | `IReadRepository<T>` (genérico) | `query.predicate` |
+| Read con hijos (eager-load) | `IReadRepository<T>` + `includeProperties:[e=>e.Children]` | `query.with-children` |
+| Write change-tracked (Add · Update · UpdateFields · Delete) | `IUnitOfWork.ExamplesWrite` / `WriteRepository` (genérico) | `cmd.create` / `cmd.update` |
+| Bulk set-based UPDATE/DELETE (incl. filtro ILike + ExecuteUpdate) | `WriteRepository.DeleteManyAsync / UpdateManyAsync` (genérico) | `cmd.delete-bulk` / `cmd.update-bulk` |
+| Read con **JOIN/subconsulta NO expresable** como predicate+Include | `IMyEntityReadRepository` (específico) | `query.specific-filter` |
+| Write con **SQL crudo · RETURNING · lógica multi-statement** de dominio | `IMyEntityWriteRepository` (específico) | sin arquetipo — derivar de `ef.base-repo` |
+| (convención OPCIONAL) encapsular ILike reutilizable como método nombrado | `IMyEntityReadRepository` | `query.specific-filter` |
 
 ### DECISION_SERVICE
 | Context | Contract | Namespace |
@@ -70,7 +93,8 @@ NEXT:   → S2_WARM  [session_temperature == warm]
 | cmd.delete | `{APP_SRC}\Features\ExamplesEF\Commands\DeleteExample\DeleteExampleCommandHandler.cs` |
 | cmd.delete-bulk | `{APP_SRC}\Features\ExamplesEF\Commands\DeleteManyExamples\DeleteManyExamplesCommandHandler.cs` |
 | cmd.update-bulk | `{APP_SRC}\Features\ExamplesEF\Commands\UpdateManyExamples\UpdateManyExamplesCommandHandler.cs` |
-| query.predicate | `{APP_SRC}\Features\ExamplesEF\Queries\GetExampleByPredicate\GetExampleByPredicateQueryHandler.cs` |
+| query.predicate (genérico) | `{APP_SRC}\Features\ExamplesEF\Queries\GetExampleByPredicate\GetExampleByPredicateQueryHandler.cs` |
+| query.specific-filter (JOIN no-genérico · o convención: encapsular ILike nombrado) | `{INFRA_SRC}\Repositories\EF\ExampleReadRepository.cs` |
 | query.paginated | `{APP_SRC}\Features\ExamplesEF\Queries\GetExamplesPaginated\GetExamplesPaginatedQueryHandler.cs` |
 | query.with-children | `{APP_SRC}\Features\ExamplesEF\Queries\GetExampleWithItems\GetExampleWithItemsQueryHandler.cs` |
 | query.child-list | `{APP_SRC}\Features\ExamplesEF\Queries\GetExampleItems\GetExampleItemsQueryHandler.cs` |
@@ -106,8 +130,11 @@ ACTION: expand template from memory · write files per PATH_PATTERNS · apply GL
 NEXT:   → S5_VALIDATE
 
 ## STATE: S3_LOAD
-GUARD:  operation ∈ REFERENCE_FILES
-ACTION: Read(REFERENCE_FILES[operation]) — exactly 1 file
+GUARD:  reference_path resuelto en S1_CLASSIFY (operation + repository_contract)
+ACTION: Read(reference_path) — exactly 1 file, el ejemplar que coincide con repository_contract.
+        Si contract == específico y el ejemplar es el repo concreto (p.ej. `query.specific-filter`),
+        la declaración en el contrato (`IMyEntityReadRepository`) y la inyección en el handler
+        son espejo mecánico del ejemplar — no requieren leer otro archivo.
 NEXT:   → S4_EXECUTE
 
 ## STATE: S4_EXECUTE
