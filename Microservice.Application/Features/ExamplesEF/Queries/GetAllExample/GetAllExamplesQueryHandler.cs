@@ -18,8 +18,12 @@ public sealed class GetAllExamplesQueryHandler(
 {
     public async Task<Result<IEnumerable<GetAllExamplesDto>>> Handle(GetAllExamplesQuery request, CancellationToken cancellationToken)
     {
+        // Include de hijos: EF carga Items genéricamente; AutoMapper proyecta la colección.
         var data = mapper.Map<IEnumerable<GetAllExamplesDto>>(
-            await readRepository.GetListAsync(x => x.Id > 0, cancellationToken: cancellationToken));
+            await readRepository.GetListAsync(
+                x => x.Id > 0,
+                includeProperties: [x => x.Items],
+                cancellationToken: cancellationToken));
 
         return Result<IEnumerable<GetAllExamplesDto>>.Success(data);
     }

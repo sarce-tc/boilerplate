@@ -12,8 +12,12 @@ namespace Microservice.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "ef");
+
             migrationBuilder.CreateTable(
                 name: "Examples",
+                schema: "ef",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -32,6 +36,7 @@ namespace Microservice.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "ExampleItems",
+                schema: "ef",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -50,6 +55,7 @@ namespace Microservice.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_ExampleItems_Examples_ExampleId",
                         column: x => x.ExampleId,
+                        principalSchema: "ef",
                         principalTable: "Examples",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -57,17 +63,20 @@ namespace Microservice.Infrastructure.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExampleItems_ExampleId",
+                schema: "ef",
                 table: "ExampleItems",
                 column: "ExampleId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExampleItems_PublicId",
+                schema: "ef",
                 table: "ExampleItems",
                 column: "PublicId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Examples_PublicId",
+                schema: "ef",
                 table: "Examples",
                 column: "PublicId",
                 unique: true);
@@ -77,10 +86,12 @@ namespace Microservice.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "ExampleItems");
+                name: "ExampleItems",
+                schema: "ef");
 
             migrationBuilder.DropTable(
-                name: "Examples");
+                name: "Examples",
+                schema: "ef");
         }
     }
 }

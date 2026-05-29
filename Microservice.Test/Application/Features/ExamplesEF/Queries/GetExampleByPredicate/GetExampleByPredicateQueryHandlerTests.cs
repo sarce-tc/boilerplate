@@ -32,14 +32,14 @@ public class GetExampleByPredicateQueryHandlerTests
         // Arrange
         var query = new GetExampleByPredicateQuery(Guid.NewGuid());
         var example = new Example("Test", "Description");
-        var dto = new GetExampleByPredicateDto(example.PublicId, "Test", "Description", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
+        var dto = new GetExampleByPredicateDto(example.PublicId, "Test", "Description", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, []);
 
         _mockReadRepository
             .Setup(r => r.GetEntityAsync(
                 It.IsAny<Expression<Func<Example, bool>>>(),
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(example);
 
@@ -64,9 +64,9 @@ public class GetExampleByPredicateQueryHandlerTests
         _mockReadRepository
             .Setup(r => r.GetEntityAsync(
                 It.IsAny<Expression<Func<Example, bool>>>(),
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((Example)null!);
 
@@ -89,15 +89,15 @@ public class GetExampleByPredicateQueryHandlerTests
         _mockReadRepository
             .Setup(r => r.GetEntityAsync(
                 It.IsAny<Expression<Func<Example, bool>>>(),
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(example);
 
         _mockMapper
             .Setup(m => m.Map<GetExampleByPredicateDto>(example))
-            .Returns(new GetExampleByPredicateDto(example.PublicId, "Test", "Description", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow));
+            .Returns(new GetExampleByPredicateDto(example.PublicId, "Test", "Description", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, []));
 
         // Act
         await _handler.Handle(query, CancellationToken.None);
@@ -106,9 +106,9 @@ public class GetExampleByPredicateQueryHandlerTests
         _mockReadRepository.Verify(
             r => r.GetEntityAsync(
                 It.IsAny<Expression<Func<Example, bool>>>(),
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -121,14 +121,14 @@ public class GetExampleByPredicateQueryHandlerTests
         var query = new GetExampleByPredicateQuery(publicId);
         var example = new Example("Test", "Description");
         example.PublicId = publicId;
-        var dto = new GetExampleByPredicateDto(publicId, "Test", "Description", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
+        var dto = new GetExampleByPredicateDto(publicId, "Test", "Description", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, []);
 
         _mockReadRepository
             .Setup(r => r.GetEntityAsync(
                 It.IsAny<Expression<Func<Example, bool>>>(),
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(example);
 
@@ -155,15 +155,15 @@ public class GetExampleByPredicateQueryHandlerTests
         _mockReadRepository
             .Setup(r => r.GetEntityAsync(
                 It.IsAny<Expression<Func<Example, bool>>>(),
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 cancellationToken))
             .ReturnsAsync(example);
 
         _mockMapper
             .Setup(m => m.Map<GetExampleByPredicateDto>(example))
-            .Returns(new GetExampleByPredicateDto(example.PublicId, "Test", "Description", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow));
+            .Returns(new GetExampleByPredicateDto(example.PublicId, "Test", "Description", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, []));
 
         // Act
         await _handler.Handle(query, cancellationToken);
@@ -172,9 +172,9 @@ public class GetExampleByPredicateQueryHandlerTests
         _mockReadRepository.Verify(
             r => r.GetEntityAsync(
                 It.IsAny<Expression<Func<Example, bool>>>(),
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 cancellationToken),
             Times.Once);
     }
@@ -188,9 +188,9 @@ public class GetExampleByPredicateQueryHandlerTests
         _mockReadRepository
             .Setup(r => r.GetEntityAsync(
                 It.IsAny<Expression<Func<Example, bool>>>(),
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Database error"));
 
@@ -208,9 +208,9 @@ public class GetExampleByPredicateQueryHandlerTests
         _mockReadRepository
             .Setup(r => r.GetEntityAsync(
                 It.IsAny<Expression<Func<Example, bool>>>(),
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((Example)null!);
 
@@ -232,9 +232,9 @@ public class GetExampleByPredicateQueryHandlerTests
         _mockReadRepository
             .Setup(r => r.GetEntityAsync(
                 It.IsAny<Expression<Func<Example, bool>>>(),
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((Example)null!);
 

@@ -1,25 +1,20 @@
-using AutoMapper;
 using MediatR;
 using Microservice.Application.Common.Results;
 using Microservice.Application.Contracts.Persistence.Dapper;
 using Microservice.Application.DTOs.Dapper;
 
 namespace Microservice.Application.Features.ExamplesDapper.Queries.SearchExamplesByNameDapper;
-// PATRÓN — Busca Examples cuyo nombre coincida con el término provisto y los proyecta a colección de DTOs.
+// PATRÓN — Busca Examples por nombre (ILike) y los devuelve CON sus hijos.
 // ── Parámetros ────────────────────────────────────────────────────────────
-//   · readRepository — IExampleReadRepository: superficie de lectura Dapper del aggregate
-//     Example; expone SearchByNameAsync para búsqueda case-insensitive (ILike) por nombre.
-//   · mapper — IMapper (AutoMapper): proyecta la colección de entidades Example hacia
-//     SearchExamplesByNameDapperDto; el perfil de mapeo vive en MappingProfile.
+//   · readRepository — IExampleReadRepository: SearchByNameWithItemsAsync proyecta las
+//     coincidencias + sus ExampleItem por JOIN + multi-mapping a DTOs (sin AutoMapper).
 public sealed class SearchExamplesByNameDapperQueryHandler(
-    IExampleReadRepository readRepository,
-    IMapper mapper) : IRequestHandler<SearchExamplesByNameDapperQuery, Result<IEnumerable<SearchExamplesByNameDto>>>
+    IExampleReadRepository readRepository) : IRequestHandler<SearchExamplesByNameDapperQuery, Result<IEnumerable<SearchExamplesByNameDto>>>
 {
     public async Task<Result<IEnumerable<SearchExamplesByNameDto>>> Handle(
         SearchExamplesByNameDapperQuery request, CancellationToken cancellationToken)
     {
-        var results = await readRepository.SearchByNameAsync(request.Name, cancellationToken);
-        return Result<IEnumerable<SearchExamplesByNameDto>>.Success(
-            mapper.Map<IEnumerable<SearchExamplesByNameDto>>(results));
+        var results = await readRepository.SearchByNameWithItemsAsync(request.Name, cancellationToken);
+        return Result<IEnumerable<SearchExamplesByNameDto>>.Success(results);
     }
 }

@@ -176,7 +176,7 @@ public class ExamplesDapperController(IMediator mediator) : ControllerBase
         [FromBody] UpdateExampleRequestDto? request,
         CancellationToken cancellationToken)
     {
-        var command = new UpdateExampleDapperCommand(publicId, request?.Name, request?.Description);
+        var command = new UpdateExampleDapperCommand(publicId, request?.Name, request?.Description, request?.Items);
         var result = await mediator.Send(command, cancellationToken);
         return result.ToActionResult();
     }

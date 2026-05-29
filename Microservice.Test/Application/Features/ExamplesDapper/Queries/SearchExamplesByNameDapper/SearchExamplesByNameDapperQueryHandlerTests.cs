@@ -1,119 +1,67 @@
-using AutoMapper;
 using FluentAssertions;
 using Moq;
 using Microservice.Application.Contracts.Persistence.Dapper;
 using Microservice.Application.DTOs.Dapper;
 using Microservice.Application.Features.ExamplesDapper.Queries.SearchExamplesByNameDapper;
-using Microservice.Domain.Entities;
 
 namespace Microservice.Test.Application.Features.ExamplesDapper.Queries.SearchExamplesByNameDapper;
 
 public class SearchExamplesByNameDapperQueryHandlerTests
 {
-    private readonly Mock<IExampleReadRepository>                  _mockReadRepository;
-    private readonly Mock<IMapper>                                 _mockMapper;
-    private readonly SearchExamplesByNameDapperQueryHandler        _handler;
+    private readonly Mock<IExampleReadRepository>         _mockReadRepository = new();
+    private readonly SearchExamplesByNameDapperQueryHandler _handler;
 
     public SearchExamplesByNameDapperQueryHandlerTests()
     {
-        _mockReadRepository = new Mock<IExampleReadRepository>();
-        _mockMapper         = new Mock<IMapper>();
-        _handler            = new SearchExamplesByNameDapperQueryHandler(_mockReadRepository.Object, _mockMapper.Object);
+        _handler = new SearchExamplesByNameDapperQueryHandler(_mockReadRepository.Object);
     }
 
     [Fact]
-    public async Task Handle_WithMatchingName_ShouldReturnSuccessWithDtos()
+    public async Task Handle_WithMatchingName_ShouldReturnDtosWithItems()
     {
-        // Arrange
-        var query    = new SearchExamplesByNameDapperQuery("Widget");
-        var examples = new List<Example>
+        var query = new SearchExamplesByNameDapperQuery("Widget");
+        var dtos  = new List<SearchExamplesByNameDto>
         {
-            new("Widget A", null) { Id = 1 },
-            new("Widget B", null) { Id = 2 },
-        };
-        var dtos = new List<SearchExamplesByNameDto>
-        {
-            new(Guid.NewGuid(), "Widget A", null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow),
-            new(Guid.NewGuid(), "Widget B", null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow),
+            new(Guid.NewGuid(), "Widget A", null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
+                [new(Guid.NewGuid(), "A", 2, Domain.Entities.ExampleItemStatus.Pending, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow)]),
+            new(Guid.NewGuid(), "Widget B", null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, []),
         };
 
         _mockReadRepository
-            .Setup(r => r.SearchByNameAsync("Widget", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(examples);
-        _mockMapper
-            .Setup(m => m.Map<IEnumerable<SearchExamplesByNameDto>>(examples))
-            .Returns(dtos);
+            .Setup(r => r.SearchByNameWithItemsAsync("Widget", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(dtos);
 
-        // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
-        // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeSameAs(dtos);
+        result.Value!.First().Items.Should().ContainSingle(i => i.Label == "A");
     }
 
     [Fact]
-    public async Task Handle_WithNoMatches_ShouldReturnSuccessWithEmptyCollection()
+    public async Task Handle_WithNoMatches_ShouldReturnEmptyCollection()
     {
-        // Arrange
         var query = new SearchExamplesByNameDapperQuery("NonExistent");
-
         _mockReadRepository
-            .Setup(r => r.SearchByNameAsync("NonExistent", It.IsAny<CancellationToken>()))
+            .Setup(r => r.SearchByNameWithItemsAsync("NonExistent", It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
-        _mockMapper
-            .Setup(m => m.Map<IEnumerable<SearchExamplesByNameDto>>(It.IsAny<IEnumerable<Example>>()))
-            .Returns([]);
 
-        // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
-        // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task Handle_ShouldCallSearchByNameAsync_WithCorrectName()
+    public async Task Handle_ShouldCallSearchByNameWithItemsAsync_WithCorrectName()
     {
-        // Arrange
-        var searchTerm = "Gadget";
-        var query      = new SearchExamplesByNameDapperQuery(searchTerm);
-
+        var query = new SearchExamplesByNameDapperQuery("Gadget");
         _mockReadRepository
-            .Setup(r => r.SearchByNameAsync(searchTerm, It.IsAny<CancellationToken>()))
+            .Setup(r => r.SearchByNameWithItemsAsync("Gadget", It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
-        _mockMapper
-            .Setup(m => m.Map<IEnumerable<SearchExamplesByNameDto>>(It.IsAny<IEnumerable<Example>>()))
-            .Returns([]);
 
-        // Act
         await _handler.Handle(query, CancellationToken.None);
 
-        // Assert
-        _mockReadRepository.Verify(r => r.SearchByNameAsync(searchTerm, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task Handle_ShouldMapResultsToDtos()
-    {
-        // Arrange
-        var query    = new SearchExamplesByNameDapperQuery("Part");
-        var examples = new List<Example> { new("Part X", null) { Id = 1 } };
-
-        _mockReadRepository
-            .Setup(r => r.SearchByNameAsync("Part", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(examples);
-        _mockMapper
-            .Setup(m => m.Map<IEnumerable<SearchExamplesByNameDto>>(It.IsAny<IEnumerable<Example>>()))
-            .Returns([]);
-
-        // Act
-        await _handler.Handle(query, CancellationToken.None);
-
-        // Assert
-        _mockMapper.Verify(
-            m => m.Map<IEnumerable<SearchExamplesByNameDto>>(It.IsAny<IEnumerable<Example>>()),
-            Times.Once);
+        _mockReadRepository.Verify(r => r.SearchByNameWithItemsAsync("Gadget", It.IsAny<CancellationToken>()), Times.Once);
     }
 }

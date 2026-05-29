@@ -86,7 +86,7 @@ public class GetExampleByPredicateDtoTests
         var updatedAt = DateTimeOffset.UtcNow;
 
         // Act
-        var dto = new GetExampleByPredicateDto(Guid.NewGuid(), "Test", "Description", createdAt, updatedAt);
+        var dto = new GetExampleByPredicateDto(Guid.NewGuid(), "Test", "Description", createdAt, updatedAt, []);
 
         // Assert
         dto.PublicId.Should().NotBe(Guid.Empty);
@@ -100,7 +100,7 @@ public class GetExampleByPredicateDtoTests
     public void DTO_ShouldInitializeNameAndDescription()
     {
         // Act
-        var dto = new GetExampleByPredicateDto(Guid.NewGuid(), "Test", "Description", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
+        var dto = new GetExampleByPredicateDto(Guid.NewGuid(), "Test", "Description", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, []);
 
         // Assert
         dto.Name.Should().Be("Test");
@@ -111,7 +111,7 @@ public class GetExampleByPredicateDtoTests
     public void DTO_WithDifferentIds_ShouldStoreCorrectValue()
     {
         // Act
-        var dto = new GetExampleByPredicateDto(Guid.NewGuid(), "Test", "Description", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
+        var dto = new GetExampleByPredicateDto(Guid.NewGuid(), "Test", "Description", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, []);
 
         // Assert
         dto.PublicId.Should().NotBe(Guid.Empty);

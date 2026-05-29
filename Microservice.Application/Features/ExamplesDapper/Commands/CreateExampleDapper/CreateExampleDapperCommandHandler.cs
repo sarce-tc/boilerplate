@@ -16,6 +16,13 @@ public sealed class CreateExampleDapperCommandHandler(
     {
         var entity = new Example(request.Name, request.Description);
 
+        // PATRÓN — hijos via domain method: AddItem valida invariantes (activo, label
+        // único, quantity > 0) ANTES de abrir la transacción. El write repo persiste
+        // el aggregate + sus Items atómicamente dentro del mismo TX (ver AddAsync).
+        if (request.Items is { Count: > 0 })
+            foreach (var item in request.Items)
+                entity.AddItem(item.Label, item.Quantity);
+
         await unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {

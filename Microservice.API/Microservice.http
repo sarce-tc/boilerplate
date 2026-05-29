@@ -1,9 +1,9 @@
 @Microservice_HostAddress = https://localhost:44394
 @version = v1
 @token = 
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImp0aSI6IjA3ZGYyNzlmLTg4NjgtNDhhNS04MmFlLTdkM2NmNThjYjJjNCIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJhZG1pbiIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiZXhwIjoxNzgwMDc1NTc1LCJpc3MiOiJtaWNyb3NlcnZpY2UtYXBpIiwiYXVkIjoibWljcm9zZXJ2aWNlLWNsaWVudHMifQ.HkN6aXGrvomNq5gMqRIpn3ys9KNHUWE8BYi3HhoHHAI
-@efPublicId = bf2daba7-3173-4d55-97e2-b108d86401ca
-@dapperPublicId = 89486e99-1550-461a-a955-ea0ab1af9417
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImp0aSI6ImEwN2Q4MTNiLWFhZTctNDkxZC1iZDhiLTRlYzhhOGI2MDM2NyIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJhZG1pbiIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiZXhwIjoxNzgwMTAxODY4LCJpc3MiOiJtaWNyb3NlcnZpY2UtYXBpIiwiYXVkIjoibWljcm9zZXJ2aWNlLWNsaWVudHMifQ.U3Y02HEmomfNCsw-9Eac5VH20kY5TBFwvhZcVCXwWpE
+@efPublicId = e28a5284-1ed0-4662-8d93-fbad1fa79d37
+@dapperPublicId = fdcd997b-a6bf-4392-a1f0-800f69d817e9
 
 ### ===== AUTH ===== token JWT (dev). Ejecuta esto PRIMERO y pega "token" en @token
 POST {{Microservice_HostAddress}}/api/{{version}}/auth/token
@@ -110,14 +110,18 @@ Content-Type: application/json
 
 ["{{efPublicId}}"]
 
-### ===== DAPPER ===== Crear un Example. Pega el Guid en @dapperPublicId
+### ===== DAPPER ===== Crear un Example con items. Pega el Guid en @dapperPublicId
 POST {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "name": "Demo Dapper",
-  "description": "Creado desde Microservice.http"
+  "description": "Creado desde Microservice.http",
+  "items": [
+    { "label": "Dapper item A", "quantity": 2 },
+    { "label": "Dapper item B", "quantity": 5 }
+  ]
 }
 
 ### DAPPER - Obtener paginado
@@ -144,14 +148,35 @@ Authorization: Bearer {{token}}
 GET {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper/{{dapperPublicId}}
 Authorization: Bearer {{token}}
 
-### DAPPER - Actualizar
+### DAPPER - Actualizar (replace-all de items)
 PUT {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper/{{dapperPublicId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "name": "Demo Dapper actualizado",
-  "description": "Nueva descripción"
+  "description": "Nueva descripción",
+  "items": [
+    { "label": "Item reemplazado", "quantity": 9 }
+  ]
+}
+
+### DAPPER - Actualizar solo escalares (items intactos: omitir "items")
+PUT {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper/{{dapperPublicId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Solo cambia el nombre"
+}
+
+### DAPPER - Vaciar todos los items (items: [])
+PUT {{Microservice_HostAddress}}/api/{{version}}/ExamplesDapper/{{dapperPublicId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "items": []
 }
 
 ### DAPPER - Borrar

@@ -16,7 +16,15 @@ public sealed class GetExamplesWithProjectionQueryHandler(
 {
     public async Task<Result<IEnumerable<GetExamplesWithProjectionDto>>> Handle(GetExamplesWithProjectionQuery request, CancellationToken cancellationToken)
     {
-        var data = await queryRepository.GetListAsync(x => new GetExamplesWithProjectionDto(x.PublicId, x.Name, x.Description), cancellationToken: cancellationToken);
+        // Items se proyectan inline: EF traduce el Select anidado a SQL (subconsulta),
+        // sin Include ni materializar la entidad completa.
+        var data = await queryRepository.GetListAsync(
+            x => new GetExamplesWithProjectionDto(
+                x.PublicId,
+                x.Name,
+                x.Description,
+                x.Items.Select(i => new GetExampleItemProjectionDto(i.PublicId, i.Label, i.Quantity)).ToList()),
+            cancellationToken: cancellationToken);
         return Result<IEnumerable<GetExamplesWithProjectionDto>>.Success(data);
     }
 }

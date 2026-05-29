@@ -26,10 +26,25 @@ public sealed class UpdateExampleDapperCommandHandler(
         if (request.Description is not null)
             example.UpdateDescription(string.IsNullOrWhiteSpace(request.Description) ? null : request.Description);
 
+        // PATRÓN — replace-all de hijos. El read repo carga el aggregate SIN items
+        // (superficie plana), así que example.Items arranca vacío; reconstruimos el
+        // conjunto deseado con AddItem (revalida activo/label único/quantity). El write
+        // repo materializa el reemplazo (DELETE + re-INSERT de example_items) dentro del TX.
+        // request.Items == null → no se toca; [] → quedará vacío; [...] → ese conjunto.
+        if (request.Items is not null)
+            foreach (var item in request.Items)
+                example.AddItem(item.Label, item.Quantity);
+
         await unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
-            await unitOfWork.ExamplesWrite.UpdateAsync(example, cancellationToken);
+            // request.Items == null → solo escalares (UpdateAsync genérico, no toca items).
+            // request.Items != null → replace-all de hijos (UpdateWithItemsAsync).
+            if (request.Items is not null)
+                await unitOfWork.ExamplesWrite.UpdateWithItemsAsync(example, cancellationToken);
+            else
+                await unitOfWork.ExamplesWrite.UpdateAsync(example, cancellationToken);
+
             await unitOfWork.CommitAsync(cancellationToken);
             return Result<Guid>.Success(example.PublicId);
         }

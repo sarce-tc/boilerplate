@@ -47,21 +47,17 @@ public class MappingProfile : Profile
             .ConstructUsing(src => new Example(src.Name, src.Description))
             .ForMember(dest => dest.Items, opt => opt.Ignore());
 
-        // PATRÓN — Entidad→DTO (lectura). Mapeo por convención de nombres.
-        CreateMap<ExampleItem, GetExampleItemDto>();
+        // PATRÓN — Entidad→DTO (lectura) lado EF. Mapeo por convención de nombres.
+        // Nota: los reads Dapper (GetAll/Paginated/ByPublicId/Search) ya NO usan AutoMapper;
+        // se proyectan por JOIN + multi-mapping a DTOs con hijos en ExampleReadRepository.
+        CreateMap<ExampleItem, DTOs.EF.GetExampleItemDto>();
         CreateMap<Example, GetExampleWithItemsDto>();
         CreateMap<Example, GetExampleByIdDto>();
         CreateMap<Example, GetExampleByPredicateDto>();
         CreateMap<Example, DTOs.EF.GetAllExamplesDto>();
         CreateMap<Example, GetExamplesFromSqlDto>();
         CreateMap<Example, DTOs.EF.GetExamplesPaginatedDto>();
-        CreateMap<Example, GetExamplesWithProjectionDto>();
-        CreateMap<Example, GetExampleWithProjectionDto>();
         CreateMap<Example, ExecuteSqlWithResultDto>();
-        CreateMap<Example, DTOs.Dapper.GetAllExamplesDto>();
-        CreateMap<Example, GetExampleByPublicIdDto>();
-        CreateMap<Example, DTOs.Dapper.GetExamplesPaginatedDto>();
-        CreateMap<Example, SearchExamplesByNameDto>();
 
     }
 }

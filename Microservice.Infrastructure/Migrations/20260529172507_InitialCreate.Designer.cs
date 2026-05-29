@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Microservice.Infrastructure.Migrations
 {
     [DbContext(typeof(ExampleDbContext))]
-    [Migration("20260527200719_InitialCreate")]
+    [Migration("20260529172507_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -20,6 +20,7 @@ namespace Microservice.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("ef")
                 .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -59,7 +60,7 @@ namespace Microservice.Infrastructure.Migrations
                     b.HasIndex("PublicId")
                         .IsUnique();
 
-                    b.ToTable("Examples");
+                    b.ToTable("Examples", "ef");
                 });
 
             modelBuilder.Entity("Microservice.Domain.Entities.ExampleItem", b =>
@@ -100,7 +101,7 @@ namespace Microservice.Infrastructure.Migrations
                     b.HasIndex("PublicId")
                         .IsUnique();
 
-                    b.ToTable("ExampleItems");
+                    b.ToTable("ExampleItems", "ef");
                 });
 
             modelBuilder.Entity("Microservice.Domain.Entities.ExampleItem", b =>

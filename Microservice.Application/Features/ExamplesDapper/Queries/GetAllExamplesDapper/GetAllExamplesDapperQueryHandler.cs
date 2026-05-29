@@ -1,28 +1,20 @@
-using AutoMapper;
 using MediatR;
 using Microservice.Application.Common.Results;
 using Microservice.Application.Contracts.Persistence.Dapper;
 using Microservice.Application.DTOs.Dapper;
 
 namespace Microservice.Application.Features.ExamplesDapper.Queries.GetAllExamplesDapper;
-// PATRÓN — Retorna todos los registros del aggregate Example proyectados a DTO de respuesta.
+// PATRÓN — Retorna todos los registros del aggregate Example CON sus hijos.
 // ── Parámetros ────────────────────────────────────────────────────────────
-//   · readRepository — IExampleReadRepository: superficie de lectura Dapper del aggregate
-//     Example; expone GetAllAsync y operaciones de consulta específicas del dominio.
-//     Dapper hidrata las entidades mapeando columnas snake_case → PascalCase via
-//     MatchNamesWithUnderscores (configurado globalmente en Infrastructure).
-//   · mapper — IMapper (AutoMapper): proyecta la colección de entidades Example
-//     hacia GetAllExamplesDapperDto; el perfil de mapeo vive en MappingProfile.
+//   · readRepository — IExampleReadRepository: GetAllWithItemsAsync proyecta cada aggregate
+//     + sus ExampleItem por JOIN + multi-mapping a DTOs (sin AutoMapper, no hidrata el dominio).
 public sealed class GetAllExamplesDapperQueryHandler(
-    IExampleReadRepository readRepository,
-    IMapper mapper) : IRequestHandler<GetAllExamplesDapperQuery, Result<IEnumerable<GetAllExamplesDto>>>
+    IExampleReadRepository readRepository) : IRequestHandler<GetAllExamplesDapperQuery, Result<IEnumerable<GetAllExamplesDto>>>
 {
     public async Task<Result<IEnumerable<GetAllExamplesDto>>> Handle(
         GetAllExamplesDapperQuery request, CancellationToken cancellationToken)
     {
-        var data = mapper.Map<IEnumerable<GetAllExamplesDto>>(
-            await readRepository.GetAllAsync(cancellationToken));
-
+        var data = await readRepository.GetAllWithItemsAsync(cancellationToken);
         return Result<IEnumerable<GetAllExamplesDto>>.Success(data);
     }
 }

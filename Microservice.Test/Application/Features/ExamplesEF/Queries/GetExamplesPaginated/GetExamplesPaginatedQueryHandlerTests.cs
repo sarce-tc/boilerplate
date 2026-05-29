@@ -44,10 +44,10 @@ public class GetExamplesPaginatedQueryHandlerTests
             .Setup(r => r.GetListPaginatedAsync(
                 1,
                 10,
-                null,
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, bool>>>(),
+                It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
@@ -76,10 +76,10 @@ public class GetExamplesPaginatedQueryHandlerTests
             .Setup(r => r.GetListPaginatedAsync(
                 1,
                 5,
-                null,
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, bool>>>(),
+                It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
@@ -109,10 +109,10 @@ public class GetExamplesPaginatedQueryHandlerTests
             .Setup(r => r.GetListPaginatedAsync(
                 3,
                 5,
-                null,
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, bool>>>(),
+                It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
@@ -138,10 +138,10 @@ public class GetExamplesPaginatedQueryHandlerTests
             .Setup(r => r.GetListPaginatedAsync(
                 2,
                 10,
-                null,
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, bool>>>(),
+                It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<Example>([], 0, 2, 10));
 
@@ -157,10 +157,10 @@ public class GetExamplesPaginatedQueryHandlerTests
             r => r.GetListPaginatedAsync(
                 2,
                 10,
-                null,
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, bool>>>(),
+                It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -178,10 +178,10 @@ public class GetExamplesPaginatedQueryHandlerTests
             .Setup(r => r.GetListPaginatedAsync(
                 page,
                 pageSize,
-                null,
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, bool>>>(),
+                It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PagedResult<Example>([], 0, page, pageSize));
 
@@ -194,7 +194,7 @@ public class GetExamplesPaginatedQueryHandlerTests
 
         // Assert
         _mockReadRepository.Verify(
-            r => r.GetListPaginatedAsync(page, pageSize, null, null, null, true, It.IsAny<CancellationToken>()),
+            r => r.GetListPaginatedAsync(page, pageSize, It.IsAny<Expression<Func<Example, bool>>>(), It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(), It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -209,10 +209,10 @@ public class GetExamplesPaginatedQueryHandlerTests
             .Setup(r => r.GetListPaginatedAsync(
                 1,
                 10,
-                null,
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, bool>>>(),
+                It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 cancellationToken))
             .ReturnsAsync(new PagedResult<Example>([], 0, 1, 10));
 
@@ -225,7 +225,7 @@ public class GetExamplesPaginatedQueryHandlerTests
 
         // Assert
         _mockReadRepository.Verify(
-            r => r.GetListPaginatedAsync(1, 10, null, null, null, true, cancellationToken),
+            r => r.GetListPaginatedAsync(1, 10, It.IsAny<Expression<Func<Example, bool>>>(), It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(), It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(), It.IsAny<bool>(), cancellationToken),
             Times.Once);
     }
 
@@ -239,10 +239,10 @@ public class GetExamplesPaginatedQueryHandlerTests
             .Setup(r => r.GetListPaginatedAsync(
                 It.IsAny<int>(),
                 It.IsAny<int>(),
-                null,
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, bool>>>(),
+                It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Database error"));
 
@@ -263,10 +263,10 @@ public class GetExamplesPaginatedQueryHandlerTests
             .Setup(r => r.GetListPaginatedAsync(
                 1,
                 10,
-                null,
-                null,
-                null,
-                true,
+                It.IsAny<Expression<Func<Example, bool>>>(),
+                It.IsAny<Func<IQueryable<Example>, IOrderedQueryable<Example>>>(),
+                It.IsAny<IEnumerable<Expression<Func<Example, object>>>>(),
+                It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 

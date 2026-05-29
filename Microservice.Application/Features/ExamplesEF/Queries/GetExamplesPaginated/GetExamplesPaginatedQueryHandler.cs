@@ -23,6 +23,7 @@ public class GetExamplesPaginatedQueryHandler(
         var pagedResult = await readRepository.GetListPaginatedAsync(
             request.CurrentPage,
             request.PageSize,
+            includeProperties: [x => x.Items],
             cancellationToken: cancellationToken);
 
         var mappedResults = mapper.Map<IEnumerable<GetExamplesPaginatedDto>>(pagedResult.Results);

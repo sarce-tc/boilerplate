@@ -27,6 +27,11 @@ public class ExampleDbContext(DbContextOptions<ExampleDbContext> options) : DbCo
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Aislamiento por ORM: EF Core vive en su propio schema 'ef'
+        // (ef.Examples / ef.ExampleItems). Dapper usa el schema 'dapper'.
+        // Evita la colisión accidental que solo se sostenía por el casing.
+        modelBuilder.HasDefaultSchema("ef");
+
         // ── Example ──────────────────────────────────────────────────────────
         modelBuilder.Entity<Example>(entity =>
         {

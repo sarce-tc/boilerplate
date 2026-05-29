@@ -1,5 +1,11 @@
 namespace Microservice.Application.DTOs.Dapper;
-// Contrato de salida de la query GetAllExamplesDapper.
-// AutoMapper hidrata este record desde la entidad Example usando el perfil en MappingProfile;
-// expone los campos de identificación pública, datos descriptivos y marcas de auditoría temporal.
-public record GetAllExamplesDto(Guid PublicId, string Name, string? Description, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt);
+// Contrato de salida de la query GetAllExamplesDapper (con hijos).
+// Se hidrata por multi-mapping (JOIN a dapper.example_items) en ExampleReadRepository.
+public record GetAllExamplesDto(
+    Guid                            PublicId,
+    string                          Name,
+    string?                         Description,
+    DateTimeOffset                  CreatedAt,
+    DateTimeOffset                  UpdatedAt,
+    IReadOnlyList<GetExampleItemDto> Items
+);
