@@ -1,0 +1,87 @@
+@*
+    Smart page: orchestrates state + gateway + navigation. Holds no presentation markup beyond
+    composition; rendering is delegated to the dumb ProductTable. No business logic lives here —
+    state transitions are in ProductsState, persistence in the gateway.
+*@
+@page "/products"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microservice.Client.Features.Products.Components
+@using Microservice.Client.Features.Products.Models
+@using Microservice.Client.Features.Products.Services
+@using Microservice.Client.Features.Products.State
+@implements IDisposable
+@inject ProductsState State
+@inject IProductsGateway Gateway
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>Productos · POS</PageTitle>
+
+<MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4" HtmlTag="h1">Catálogo de productos</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add" OnClick="GoCreate">
+        Nuevo producto
+    </MudButton>
+</MudStack>
+
+@if (State.HasError)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">
+        @State.Error!.Message
+        @if (!string.IsNullOrEmpty(State.Error.CorrelationId))
+        {
+            <span class="ml-2" style="opacity:.7">(id: @State.Error.CorrelationId)</span>
+        }
+    </MudAlert>
+}
+
+<MudPaper Elevation="1" Class="pa-4">
+    <ProductTable Items="State.Items" Loading="State.IsLoading"
+                  PageCount="State.PageCount" CurrentPage="State.Page.Page"
+                  OnEdit="Edit" OnDelete="Delete" OnPageChanged="OnPageChanged" />
+</MudPaper>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        State.Changed += OnStateChanged;
+        await State.LoadAsync();
+    }
+
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    private void GoCreate() => Nav.NavigateTo("/products/new");
+
+    private void Edit(ProductListItemVm item) => Nav.NavigateTo($"/products/{item.PublicId}/edit");
+
+    private Task OnPageChanged(int page) => State.GoToPageAsync(page);
+
+    private async Task Delete(ProductListItemVm item)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            "Eliminar producto",
+            $"¿Eliminar \"{item.Name}\" ({item.Sku})? Esta acción no se puede deshacer.",
+            yesText: "Eliminar", cancelText: "Cancelar");
+
+        if (confirmed != true)
+            return;
+
+        var result = await Gateway.DeleteAsync(item.PublicId);
+        await result.Match(
+            onSuccess: async ack =>
+            {
+                Snackbar.Add(ack.Queued ? "Eliminación encolada (se sincronizará al reconectar)." : "Producto eliminado.",
+                    ack.Queued ? Severity.Info : Severity.Success);
+                await State.RemoveAndReloadAsync(item.PublicId);
+            },
+            onError: err =>
+            {
+                Snackbar.Add(err.Message, Severity.Error);
+                return Task.CompletedTask;
+            });
+    }
+
+    public void Dispose() => State.Changed -= OnStateChanged;
+}

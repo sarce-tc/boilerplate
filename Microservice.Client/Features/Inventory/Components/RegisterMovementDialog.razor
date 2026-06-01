@@ -1,0 +1,110 @@
+@*
+    Register-movement dialog. Resolves the product by barcode/SKU through the Products gateway
+    (read), validates the form, and returns a RegisterInventoryMovementRequest to the page, which
+    performs the write. Can be opened with a product preset (from the product stock detail).
+*@
+@using Microservice.Client.Application.Validation
+@using Microservice.Client.Features.Inventory.Models
+@using Microservice.Client.Features.Products.Services
+@inject IProductsGateway Products
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <EditForm Model="_model" OnValidSubmit="Submit">
+            <FluentValidationValidator TModel="MovementFormModel" />
+
+            @if (Preset is null)
+            {
+                <MudStack Row Spacing="2" AlignItems="AlignItems.Center" Class="mb-2">
+                    <MudTextField @bind-Value="_model.Lookup" Label="Código de barras / SKU" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" Immediate OnKeyUp="OnLookupKeyUp" aria-label="Buscar producto" />
+                    <MudButton Variant="Variant.Filled" OnClick="ResolveProduct" Disabled="_resolving">Buscar</MudButton>
+                </MudStack>
+            }
+
+            @if (_model.HasProduct)
+            {
+                <MudAlert Severity="Severity.Success" Dense Class="mb-3">@_model.ProductDisplay</MudAlert>
+            }
+
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudSelect @bind-Value="_model.MovementType" Label="Tipo de movimiento" Variant="Variant.Outlined">
+                        @foreach (var t in Enum.GetValues<InventoryMovementType>())
+                        {
+                            <MudSelectItem Value="t">@InventoryLabels.Movement(t)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="_model.Quantity" Label="Cantidad" Variant="Variant.Outlined"
+                                     Min="0" Format="0.##" For="@(() => _model.Quantity)" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_model.Reason" Label="Motivo (opcional)" Variant="Variant.Outlined"
+                                  For="@(() => _model.Reason)" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_model.Reference" Label="Referencia (opcional)" Variant="Variant.Outlined"
+                                  For="@(() => _model.Reference)" />
+                </MudItem>
+            </MudGrid>
+
+            <div class="d-flex justify-end mt-4" style="gap:.5rem">
+                <MudButton OnClick="Cancel">Cancelar</MudButton>
+                <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary" Variant="Variant.Filled"
+                           Disabled="@(!_model.HasProduct)">Registrar</MudButton>
+            </div>
+        </EditForm>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+
+    /// <summary>Optional preset (product id, display) when opened from the product stock detail.</summary>
+    [Parameter] public (Guid Id, string Display)? Preset { get; set; }
+
+    private readonly MovementFormModel _model = new();
+    private bool _resolving;
+
+    protected override void OnInitialized()
+    {
+        if (Preset is { } preset)
+        {
+            _model.ProductPublicId = preset.Id;
+            _model.ProductDisplay = preset.Display;
+        }
+    }
+
+    private Task OnLookupKeyUp(KeyboardEventArgs e) =>
+        e.Key is "Enter" or "NumpadEnter" ? ResolveProduct() : Task.CompletedTask;
+
+    private async Task ResolveProduct()
+    {
+        var code = _model.Lookup.Trim();
+        if (string.IsNullOrEmpty(code))
+            return;
+
+        _resolving = true;
+        var result = await Products.GetByBarcodeAsync(code);
+        _resolving = false;
+
+        result.Match(
+            product =>
+            {
+                _model.ProductPublicId = product.PublicId;
+                _model.ProductDisplay = $"{product.Name} ({product.Sku})";
+                return true;
+            },
+            err =>
+            {
+                Snackbar.Add(err.Kind == ErrorKind.NotFound ? $"Sin producto para «{code}»." : err.Message, Severity.Warning);
+                return false;
+            });
+    }
+
+    private void Submit() => Dialog.Close(DialogResult.Ok(_model.ToRequest()));
+    private void Cancel() => Dialog.Cancel();
+}

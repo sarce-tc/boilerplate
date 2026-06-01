@@ -1,0 +1,72 @@
+@*
+    Dumb/presentational form. Owns NO business logic and NO HTTP — it raises OnValidSubmit
+    with the edited model and lets the smart page persist. Server-side validation errors are
+    pushed in via the public AddServerErrors method on the validator.
+*@
+@using Microservice.Client.Application.Validation
+@using Microservice.Client.Features.Products.Models
+
+<EditForm Model="Model" OnValidSubmit="HandleValidSubmit">
+    <FluentValidationValidator @ref="_validator" TModel="ProductFormModel" />
+
+    <MudGrid>
+        <MudItem xs="12" sm="6">
+            <MudTextField @bind-Value="Model.Sku" Label="SKU" Variant="Variant.Outlined"
+                          Disabled="@(!Model.IsNew)" For="@(() => Model.Sku)" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTextField @bind-Value="Model.Name" Label="Nombre" Variant="Variant.Outlined"
+                          For="@(() => Model.Name)" />
+        </MudItem>
+        <MudItem xs="12">
+            <MudTextField @bind-Value="Model.Description" Label="Descripción" Variant="Variant.Outlined"
+                          Lines="2" For="@(() => Model.Description)" />
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudNumericField @bind-Value="Model.Price" Label="Precio" Variant="Variant.Outlined"
+                             Min="0" Format="N2" For="@(() => Model.Price)" />
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudNumericField @bind-Value="Model.Cost" Label="Costo" Variant="Variant.Outlined"
+                             Min="0" Format="N2" For="@(() => Model.Cost)" />
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudNumericField @bind-Value="Model.TaxRate" Label="IVA %" Variant="Variant.Outlined"
+                             Min="0" Max="100" For="@(() => Model.TaxRate)" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTextField @bind-Value="Model.CategoryName" Label="Categoría" Variant="Variant.Outlined"
+                          For="@(() => Model.CategoryName)" />
+        </MudItem>
+        <MudItem xs="12" sm="6" Class="d-flex align-center">
+            <MudSwitch @bind-Value="Model.IsActive" Label="Activo" Color="Color.Primary" />
+        </MudItem>
+    </MudGrid>
+
+    <MudStack Row Justify="Justify.FlexEnd" Class="mt-4" Spacing="2">
+        <MudButton Variant="Variant.Text" OnClick="OnCancel" Disabled="Busy">Cancelar</MudButton>
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+                   Disabled="Busy">
+            @if (Busy)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate Class="mr-2" />
+            }
+            Guardar
+        </MudButton>
+    </MudStack>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired] public ProductFormModel Model { get; set; } = default!;
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback<ProductFormModel> OnValidSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private FluentValidationValidator<ProductFormModel>? _validator;
+
+    private Task HandleValidSubmit() => OnValidSubmit.InvokeAsync(Model);
+
+    /// <summary>Called by the smart page to surface server-side (ProblemDetails) field errors.</summary>
+    public void ShowServerErrors(IReadOnlyDictionary<string, string[]> fieldErrors) =>
+        _validator?.AddServerErrors(fieldErrors);
+}

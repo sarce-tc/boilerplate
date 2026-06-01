@@ -1,0 +1,57 @@
+@* Dumb sales-history grid. Pure rendering + page callback. *@
+@using Microservice.Client.Features.Sales.Models
+
+<MudTable Items="Items" Loading="Loading" Hover Dense T="SaleListItemVm" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        <MudTh>Fecha</MudTh>
+        <MudTh>Estado</MudTh>
+        <MudTh>Cliente</MudTh>
+        <MudTh Style="text-align:right">Total</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Fecha">@context.CreatedAt.LocalDateTime.ToString("g")</MudTd>
+        <MudTd DataLabel="Estado">
+            <MudChip T="string" Size="Size.Small" Color="@StatusColor(context.Status)">@StatusLabel(context.Status)</MudChip>
+        </MudTd>
+        <MudTd DataLabel="Cliente">@(context.HasCustomer ? "Con cliente" : "Consumidor final")</MudTd>
+        <MudTd DataLabel="Total" Style="text-align:right">@context.Total.ToString("N2")</MudTd>
+        <MudTd Style="text-align:right">
+            <MudIconButton Icon="@Icons.Material.Filled.Receipt" Size="Size.Small"
+                           aria-label="Ticket" OnClick="@(() => OnTicket.InvokeAsync(context))" />
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent><MudText Class="pa-4">No hay ventas registradas.</MudText></NoRecordsContent>
+</MudTable>
+
+@if (PageCount > 1)
+{
+    <div class="d-flex justify-center mt-4">
+        <MudPagination Count="PageCount" Selected="CurrentPage"
+                       SelectedChanged="@(p => OnPageChanged.InvokeAsync(p))" Color="Color.Primary" />
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<SaleListItemVm> Items { get; set; } = [];
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public int PageCount { get; set; }
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public EventCallback<SaleListItemVm> OnTicket { get; set; }
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+
+    private static string StatusLabel(SaleStatus s) => s switch
+    {
+        SaleStatus.Pending => "Pendiente",
+        SaleStatus.Confirmed => "Confirmada",
+        SaleStatus.Cancelled => "Anulada",
+        _ => s.ToString()
+    };
+
+    private static Color StatusColor(SaleStatus s) => s switch
+    {
+        SaleStatus.Confirmed => Color.Success,
+        SaleStatus.Cancelled => Color.Error,
+        _ => Color.Warning
+    };
+}

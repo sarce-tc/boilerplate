@@ -1,0 +1,25 @@
+@*
+    Root component. CascadingAuthenticationState exposes the JWT-backed auth state;
+    AuthorizeRouteView gates protected routes and redirects anonymous users to /login.
+    A top-level ErrorBoundary is the last-resort net — per-section boundaries live in MainLayout.
+*@
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+                <NotAuthorized>
+                    <RedirectToLogin />
+                </NotAuthorized>
+                <Authorizing>
+                    <MudProgressLinear Indeterminate Color="Color.Primary" />
+                </Authorizing>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <LayoutView Layout="@typeof(Layout.MainLayout)">
+                <MudText Typo="Typo.h5" Class="pa-8">404 — Página no encontrada.</MudText>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

@@ -59,5 +59,50 @@ public class MappingProfile : Profile
         CreateMap<Example, DTOs.EF.GetExamplesPaginatedDto>();
         CreateMap<Example, ExecuteSqlWithResultDto>();
 
+        // ── Product aggregate ──────────────────────────────────────────────
+        // Command→Entidad: factory constructor vía ConstructUsing; Barcodes se ignora
+        // (IReadOnlyList sobre backing field _barcodes) y se puebla en el handler con AddBarcode.
+        CreateMap<Features.ProductsEF.Commands.CreateProduct.CreateProductCommand, Product>(MemberList.None)
+            .ConstructUsing(src => new Product(
+                src.Sku, src.Name, src.Description, src.Price, src.Cost, src.TaxRate, src.CategoryName))
+            .ForMember(dest => dest.Barcodes, opt => opt.Ignore());
+
+        // Entidad→DTO: mapeo por convención de nombres.
+        CreateMap<ProductBarcode, ProductBarcodeDto>();
+        CreateMap<Product, GetProductDto>();
+        CreateMap<Product, GetProductsPaginatedDto>();
+
+        // ── Customer aggregate ─────────────────────────────────────────────
+        CreateMap<Features.CustomersEF.Commands.CreateCustomer.CreateCustomerCommand, Customer>(MemberList.None)
+            .ConstructUsing(src => new Customer(
+                src.Name, src.DocType, src.DocNumber, src.TaxCondition, src.Email, src.Phone, src.Address));
+
+        CreateMap<Customer, GetCustomerDto>();
+        CreateMap<Customer, GetCustomersPaginatedDto>();
+
+        // ── Stock / Inventory (solo Entidad→DTO; las entidades las crea el domain service) ──
+        CreateMap<StockItem, StockItemDto>();
+        CreateMap<InventoryMovement, InventoryMovementDto>();
+
+        // ── Cash management ────────────────────────────────────────────────
+        CreateMap<Features.CashEF.Commands.OpenCashSession.OpenCashSessionCommand, CashSession>(MemberList.None)
+            .ConstructUsing(src => new CashSession(src.RegisterName, src.OpeningBalance, src.OpenedBy))
+            .ForMember(dest => dest.Movements, opt => opt.Ignore());
+
+        CreateMap<CashMovement, CashMovementDto>();
+        // OpenedAt no existe como propiedad: se proyecta desde CreatedAt (momento de apertura).
+        CreateMap<CashSession, CashSessionDto>()
+            .ForCtorParam(nameof(CashSessionDto.OpenedAt), opt => opt.MapFrom(src => src.CreatedAt));
+        CreateMap<CashSession, CashSessionsPaginatedDto>()
+            .ForCtorParam(nameof(CashSessionsPaginatedDto.OpenedAt), opt => opt.MapFrom(src => src.CreatedAt));
+
+        // ── Sales (Entidad→DTO; la venta se construye en el handler con snapshot de catálogo) ──
+        CreateMap<SaleItem, SaleItemDto>();
+        CreateMap<Sale, SaleDto>();
+        CreateMap<Sale, SalesPaginatedDto>();
+
+        // ── Invoices (Entidad→DTO; el comprobante se construye en el handler) ──
+        CreateMap<Invoice, InvoiceDto>();
+        CreateMap<Invoice, InvoicesPaginatedDto>();
     }
 }

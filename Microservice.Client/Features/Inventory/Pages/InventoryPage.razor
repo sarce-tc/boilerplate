@@ -1,0 +1,69 @@
+@*
+    Smart page: stock overview. Orchestrates InventoryState + gateway + the register-movement dialog.
+    Stock is read-only here; the only mutation is registering a movement (the server adjusts the balance).
+*@
+@page "/inventory"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microservice.Client.Features.Inventory.Components
+@using Microservice.Client.Features.Inventory.Models
+@using Microservice.Client.Features.Inventory.Services
+@using Microservice.Client.Features.Inventory.State
+@implements IDisposable
+@inject InventoryState State
+@inject IInventoryGateway Gateway
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>Inventario · POS</PageTitle>
+
+<MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4" HtmlTag="h1">Inventario</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddBox"
+               OnClick="RegisterMovement">Registrar movimiento</MudButton>
+</MudStack>
+
+@if (State.HasError)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@State.Error!.Message</MudAlert>
+}
+
+<MudPaper Elevation="1" Class="pa-4">
+    <StockTable Items="State.Items" Loading="State.IsLoading" PageCount="State.PageCount"
+                CurrentPage="State.Page.Page" OnView="ViewProduct" OnPageChanged="OnPageChanged" />
+</MudPaper>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        State.Changed += OnStateChanged;
+        await State.LoadAsync();
+    }
+
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    private void ViewProduct(StockItemVm item) => Nav.NavigateTo($"/inventory/{item.ProductPublicId}");
+    private Task OnPageChanged(int page) => State.GoToPageAsync(page);
+
+    private async Task RegisterMovement()
+    {
+        var dialog = await DialogService.ShowAsync<RegisterMovementDialog>("Registrar movimiento de inventario",
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled || result.Data is not RegisterInventoryMovementRequest request)
+            return;
+
+        var ack = await Gateway.RegisterMovementAsync(request);
+        await ack.Match(
+            onSuccess: async cmd =>
+            {
+                Snackbar.Add(cmd.Queued ? "Movimiento encolado (se sincronizará al reconectar)." : "Movimiento registrado.",
+                    cmd.Queued ? Severity.Info : Severity.Success);
+                await State.LoadAsync();
+            },
+            onError: err => { Snackbar.Add(err.Message, Severity.Error); return Task.CompletedTask; });
+    }
+
+    public void Dispose() => State.Changed -= OnStateChanged;
+}

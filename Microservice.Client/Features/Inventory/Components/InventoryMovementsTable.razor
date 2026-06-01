@@ -1,0 +1,28 @@
+@*  Dumb ledger table for a product's inventory movements. *@
+@using Microservice.Client.Features.Inventory.Models
+
+<MudTable Items="Movements" Dense Hover T="InventoryMovementVm" Elevation="0" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        <MudTh>Fecha</MudTh>
+        <MudTh>Tipo</MudTh>
+        <MudTh>Motivo</MudTh>
+        <MudTh Style="text-align:right">Cantidad</MudTh>
+        <MudTh Style="text-align:right">Saldo</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Fecha">@context.CreatedAt.LocalDateTime.ToString("g")</MudTd>
+        <MudTd DataLabel="Tipo">@InventoryLabels.Movement(context.MovementType)</MudTd>
+        <MudTd DataLabel="Motivo">@(context.Reason ?? context.Reference ?? "—")</MudTd>
+        <MudTd DataLabel="Cantidad" Style="text-align:right">
+            <span style="color:@(context.SignedQuantity < 0 ? "var(--mud-palette-error)" : "var(--mud-palette-success)")">
+                @context.SignedQuantity.ToString("0.##")
+            </span>
+        </MudTd>
+        <MudTd DataLabel="Saldo" Style="text-align:right">@context.BalanceAfter.ToString("0.##")</MudTd>
+    </RowTemplate>
+    <NoRecordsContent><MudText Class="pa-3">Sin movimientos para este producto.</MudText></NoRecordsContent>
+</MudTable>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<InventoryMovementVm> Movements { get; set; } = [];
+}

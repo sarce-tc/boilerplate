@@ -1,0 +1,54 @@
+@*
+    Dumb cart renderer. No state, no HTTP — edits raise callbacks the smart page applies to the
+    cart state. Totals are passed in (computed by SaleCartState).
+*@
+@using Microservice.Client.Features.Sales.Models
+
+<MudTable Items="Lines" Dense Hover T="CartLineVm" Class="pos-cart" Elevation="0">
+    <HeaderContent>
+        <MudTh>Producto</MudTh>
+        <MudTh Style="text-align:right">Precio</MudTh>
+        <MudTh Style="text-align:center;width:120px">Cant.</MudTh>
+        <MudTh Style="text-align:right">Subtotal</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Producto">
+            <strong>@context.Name</strong><br /><span style="opacity:.6">@context.Sku</span>
+        </MudTd>
+        <MudTd DataLabel="Precio" Style="text-align:right">@context.UnitPrice.ToString("N2")</MudTd>
+        <MudTd DataLabel="Cantidad" Style="text-align:center">
+            <MudNumericField T="decimal" Value="context.Quantity" Min="0" Step="1M" Margin="Margin.Dense"
+                             Variant="Variant.Outlined" HideSpinButtons="false"
+                             ValueChanged="@(q => OnQuantityChanged.InvokeAsync((context.ProductPublicId, q)))" />
+        </MudTd>
+        <MudTd DataLabel="Subtotal" Style="text-align:right">@context.LineTotal.ToString("N2")</MudTd>
+        <MudTd Style="text-align:right">
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                           aria-label="Quitar" OnClick="@(() => OnRemove.InvokeAsync(context.ProductPublicId))" />
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText Class="pa-4" Align="Align.Center">Escaneá o agregá un producto para comenzar.</MudText>
+    </NoRecordsContent>
+</MudTable>
+
+<MudDivider Class="my-3" />
+
+<MudStack Spacing="1" Class="px-2">
+    <MudStack Row Justify="Justify.SpaceBetween"><span>Subtotal</span><span>@Subtotal.ToString("N2")</span></MudStack>
+    <MudStack Row Justify="Justify.SpaceBetween"><span>IVA</span><span>@TaxAmount.ToString("N2")</span></MudStack>
+    <MudStack Row Justify="Justify.SpaceBetween" Class="mt-1">
+        <MudText Typo="Typo.h6">Total</MudText>
+        <MudText Typo="Typo.h6">@Total.ToString("N2")</MudText>
+    </MudStack>
+</MudStack>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<CartLineVm> Lines { get; set; } = [];
+    [Parameter] public decimal Subtotal { get; set; }
+    [Parameter] public decimal TaxAmount { get; set; }
+    [Parameter] public decimal Total { get; set; }
+    [Parameter] public EventCallback<(Guid ProductPublicId, decimal Quantity)> OnQuantityChanged { get; set; }
+    [Parameter] public EventCallback<Guid> OnRemove { get; set; }
+}

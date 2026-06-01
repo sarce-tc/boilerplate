@@ -1,0 +1,90 @@
+@*
+    Smart page for create + edit (one screen, two routes). Loads the model through the gateway,
+    delegates rendering to the dumb ProductForm, and persists via the gateway — translating the
+    typed result into snackbars and merged server-side validation.
+*@
+@page "/products/new"
+@page "/products/{PublicId:guid}/edit"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microservice.Client.Features.Products.Components
+@using Microservice.Client.Features.Products.Models
+@using Microservice.Client.Features.Products.Services
+@using Microservice.Client.Shared.Results
+@inject IProductsGateway Gateway
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>@(IsNew ? "Nuevo producto" : "Editar producto") · POS</PageTitle>
+
+<MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-4">
+    @(IsNew ? "Nuevo producto" : $"Editar: {_model?.Name}")
+</MudText>
+
+<MudPaper Elevation="1" Class="pa-6" MaxWidth="900px">
+    @if (_loadError is not null)
+    {
+        <MudAlert Severity="Severity.Error">@_loadError.Message</MudAlert>
+    }
+    else if (_model is null)
+    {
+        <MudProgressLinear Indeterminate Color="Color.Primary" />
+    }
+    else
+    {
+        <ProductForm @ref="_form" Model="_model" Busy="_saving"
+                     OnValidSubmit="Save" OnCancel="Cancel" />
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public Guid? PublicId { get; set; }
+
+    private ProductFormModel? _model;
+    private ProductForm? _form;
+    private UiError? _loadError;
+    private bool _saving;
+
+    private bool IsNew => PublicId is null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsNew)
+        {
+            _model = new ProductFormModel();
+            return;
+        }
+
+        var result = await Gateway.GetByIdAsync(PublicId!.Value);
+        result.Match(
+            model => { _model = model; return true; },
+            err => { _loadError = err; return false; });
+    }
+
+    private async Task Save(ProductFormModel model)
+    {
+        _saving = true;
+        var result = IsNew
+            ? await Gateway.CreateAsync(model)
+            : await Gateway.UpdateAsync(model);
+        _saving = false;
+
+        result.Match(
+            onSuccess: ack =>
+            {
+                Snackbar.Add(ack.Queued ? "Guardado offline: se sincronizará al reconectar." : "Producto guardado.",
+                    ack.Queued ? Severity.Info : Severity.Success);
+                Nav.NavigateTo("/products");
+                return true;
+            },
+            onError: err =>
+            {
+                if (err.IsValidation && err.FieldErrors is { Count: > 0 })
+                    _form?.ShowServerErrors(err.FieldErrors);
+                else
+                    Snackbar.Add(err.Message, Severity.Error);
+                return false;
+            });
+    }
+
+    private void Cancel() => Nav.NavigateTo("/products");
+}

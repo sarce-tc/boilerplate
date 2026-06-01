@@ -1,0 +1,33 @@
+@*  Dumb form: open a cash session. No logic — raises OnValidSubmit with the model. *@
+@using Microservice.Client.Application.Validation
+@using Microservice.Client.Features.CashRegister.Models
+
+<EditForm Model="Model" OnValidSubmit="HandleSubmit">
+    <FluentValidationValidator TModel="OpenSessionFormModel" />
+    <MudGrid>
+        <MudItem xs="12" sm="6">
+            <MudTextField @bind-Value="Model.RegisterName" Label="Caja / Terminal" Variant="Variant.Outlined"
+                          For="@(() => Model.RegisterName)" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudNumericField @bind-Value="Model.OpeningBalance" Label="Saldo inicial" Variant="Variant.Outlined"
+                             Min="0" Format="N2" For="@(() => Model.OpeningBalance)" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTextField @bind-Value="Model.OpenedBy" Label="Abierta por (opcional)" Variant="Variant.Outlined" />
+        </MudItem>
+    </MudGrid>
+    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+               Class="mt-4" Disabled="Busy" StartIcon="@Icons.Material.Filled.LockOpen">
+        @if (Busy) { <MudProgressCircular Size="Size.Small" Indeterminate Class="mr-2" /> }
+        Abrir caja
+    </MudButton>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired] public OpenSessionFormModel Model { get; set; } = default!;
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback<OpenSessionFormModel> OnValidSubmit { get; set; }
+
+    private Task HandleSubmit() => OnValidSubmit.InvokeAsync(Model);
+}

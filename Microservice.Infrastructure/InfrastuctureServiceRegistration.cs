@@ -44,6 +44,12 @@ public static class InfrastructureServiceRegistration
         services.AddMemoryCache();
         services.AddScoped<ICacheService, MemoryCacheService>();
 
+        // Facturación electrónica AFIP/ARCA — STUB (reemplazar por WSAA/WSFEv1 real con certificados)
+        services.AddScoped<IElectronicInvoicingService, StubElectronicInvoicingService>();
+
+        // Impresión de tickets — render HTML (una impresora ESC/POS implementaría el mismo puerto)
+        services.AddScoped<ITicketPrinter, HtmlTicketPrinter>();
+
         // EF repositories (generic)
         services.AddScoped(typeof(Application.Contracts.Persistence.EF.IReadRepository<>), typeof(LINQRepository<>));
         services.AddScoped(typeof(Application.Contracts.Persistence.EF.IWriteRepository<>), typeof(LINQRepository<>));
@@ -59,6 +65,8 @@ public static class InfrastructureServiceRegistration
 
         // Domain services (cross-aggregate)
         services.AddScoped<IExampleService, ExampleService>();
+        services.AddScoped<IInventoryDomainService, InventoryDomainService>();
+        services.AddScoped<ISaleDomainService, SaleDomainService>();
 
         // EF UoW
         services.AddScoped<Application.Contracts.Persistence.EF.IUnitOfWork, Repositories.EF.UnitOfWork>();

@@ -1,0 +1,71 @@
+@*
+    Login screen. Posts credentials to /api/v1/auth/token via IAuthService, which stores the
+    token and refreshes the auth state. On success returns the user to where they were headed.
+*@
+@page "/login"
+@layout EmptyLayout
+@using Microservice.Client.Infrastructure.Auth
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>Ingresar · POS</PageTitle>
+
+<MudPaper Elevation="3" Class="pa-8" Width="100%">
+    <MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-2">POS</MudText>
+    <MudText Typo="Typo.body2" Class="mb-6" Color="Color.Secondary">Ingresá tus credenciales para continuar.</MudText>
+
+    <EditForm Model="this" OnValidSubmit="Submit">
+        <MudTextField @bind-Value="_username" Label="Usuario" Variant="Variant.Outlined"
+                      Class="mb-4" Immediate aria-label="Usuario" />
+        <MudTextField @bind-Value="_password" Label="Contraseña" Variant="Variant.Outlined"
+                      InputType="InputType.Password" Class="mb-4" aria-label="Contraseña" />
+
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+        }
+
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+                   FullWidth Size="Size.Large" Disabled="_busy">
+            @if (_busy)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate Class="mr-2" />
+            }
+            Ingresar
+        </MudButton>
+    </EditForm>
+</MudPaper>
+
+@code {
+    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+
+    private string _username = string.Empty;
+    private string _password = string.Empty;
+    private string? _error;
+    private bool _busy;
+
+    private async Task Submit()
+    {
+        _busy = true;
+        _error = null;
+
+        var result = await AuthService.LoginAsync(_username, _password);
+        _busy = false;
+
+        if (result.IsSuccess)
+        {
+            Nav.NavigateTo(SafeReturnUrl());
+            return;
+        }
+
+        _error = result.Error!.Kind == ErrorKind.Validation || result.Error.Kind == ErrorKind.Unauthorized
+            ? "Usuario o contraseña inválidos."
+            : result.Error.Message;
+    }
+
+    // Only allow local (relative) return paths — never an absolute URL (open-redirect guard).
+    private string SafeReturnUrl() =>
+        string.IsNullOrWhiteSpace(ReturnUrl) || ReturnUrl.Contains("://")
+            ? "/"
+            : "/" + ReturnUrl.TrimStart('/');
+}

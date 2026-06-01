@@ -1,0 +1,74 @@
+@*
+    Smart page: sales history. Lightweight local state (no critical/shared aggregate here),
+    delegates rendering to the dumb SalesTable and reuses the TicketDialog.
+*@
+@page "/sales"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microservice.Client.Features.Sales.Components
+@using Microservice.Client.Features.Sales.Models
+@using Microservice.Client.Features.Sales.Services
+@inject ISalesGateway Sales
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Ventas · POS</PageTitle>
+
+<MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4" HtmlTag="h1">Ventas</MudText>
+    <MudButton Href="/pos" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PointOfSale">
+        Nueva venta
+    </MudButton>
+</MudStack>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_error.Message</MudAlert>
+}
+
+<MudPaper Elevation="1" Class="pa-4">
+    <SalesTable Items="_items" Loading="_loading" PageCount="_pageCount" CurrentPage="_page.Page"
+                OnTicket="ShowTicket" OnPageChanged="GoToPage" />
+</MudPaper>
+
+@code {
+    private IReadOnlyList<SaleListItemVm> _items = [];
+    private PageRequest _page = new(1, 20);
+    private int _pageCount;
+    private bool _loading;
+    private UiError? _error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        var result = await Sales.GetPagedAsync(_page);
+        result.Match(
+            page => { _items = page.Results; _pageCount = page.PageCount; return true; },
+            err => { _error = err; return false; });
+
+        _loading = false;
+    }
+
+    private Task GoToPage(int page)
+    {
+        _page = _page with { Page = page };
+        return LoadAsync();
+    }
+
+    private async Task ShowTicket(SaleListItemVm sale)
+    {
+        var ticket = await Sales.GetTicketAsync(sale.PublicId);
+        if (ticket.IsFailure)
+        {
+            Snackbar.Add(ticket.Error!.Message, Severity.Warning);
+            return;
+        }
+
+        var parameters = new DialogParameters<TicketDialog> { { x => x.Ticket, ticket.Value } };
+        await DialogService.ShowAsync<TicketDialog>("Ticket", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+    }
+}

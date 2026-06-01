@@ -1,7 +1,9 @@
 <Solution>
   <Project Path="Microservice.API/Microservice.API.csproj" />
+  <Project Path="Microservice.Client/Microservice.Client.csproj" />
   <Project Path="Microservice.Application/Microservice.Application.csproj" />
   <Project Path="Microservice.Domain/Microservice.Domain.csproj" />
   <Project Path="Microservice.Infrastructure/Microservice.Infrastructure.csproj" />
   <Project Path="Microservice.Test/Microservice.Test.csproj" />
+  <Project Path="Microservice.Client.Test/Microservice.Client.Test.csproj" />
 </Solution>

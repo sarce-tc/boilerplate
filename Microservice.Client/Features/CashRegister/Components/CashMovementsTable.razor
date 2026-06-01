@@ -1,0 +1,37 @@
+@*  Dumb table of cash movements with signed amounts. *@
+@using Microservice.Client.Features.CashRegister.Models
+
+<MudTable Items="Movements" Dense Hover T="CashMovementVm" Elevation="0" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        <MudTh>Hora</MudTh>
+        <MudTh>Tipo</MudTh>
+        <MudTh>Descripción</MudTh>
+        <MudTh Style="text-align:right">Monto</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Hora">@context.CreatedAt.LocalDateTime.ToString("HH:mm")</MudTd>
+        <MudTd DataLabel="Tipo">@Label(context.MovementType)</MudTd>
+        <MudTd DataLabel="Descripción">@(context.Description ?? "—")</MudTd>
+        <MudTd DataLabel="Monto" Style="text-align:right">
+            <span style="color:@(context.SignedAmount < 0 ? "var(--mud-palette-error)" : "var(--mud-palette-success)")">
+                @context.SignedAmount.ToString("N2")
+            </span>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent><MudText Class="pa-3">Sin movimientos en este turno.</MudText></NoRecordsContent>
+</MudTable>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<CashMovementVm> Movements { get; set; } = [];
+
+    private static string Label(CashMovementType t) => t switch
+    {
+        CashMovementType.Sale => "Venta",
+        CashMovementType.Refund => "Devolución",
+        CashMovementType.Deposit => "Ingreso",
+        CashMovementType.Withdrawal => "Retiro",
+        CashMovementType.AdjustmentIn => "Ajuste (+)",
+        CashMovementType.AdjustmentOut => "Ajuste (−)",
+        _ => t.ToString()
+    };
+}

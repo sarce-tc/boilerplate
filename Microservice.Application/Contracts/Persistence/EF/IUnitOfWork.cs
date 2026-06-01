@@ -12,5 +12,16 @@ public interface IUnitOfWork
 {
     IExampleWriteRepository   ExamplesWrite   { get; }
     IWriteRepository<Example> WriteRepository { get; }
+
+    // POS aggregates — generic-first: superficie genérica de LINQRepository<T>.
+    // No requieren contrato específico (sin ILike/JOIN/SQL crudo en escritura).
+    IWriteRepository<Product>           ProductsWrite           { get; }
+    IWriteRepository<Customer>          CustomersWrite          { get; }
+    IWriteRepository<StockItem>         StockItemsWrite         { get; }
+    IWriteRepository<InventoryMovement> InventoryMovementsWrite { get; }
+    IWriteRepository<CashSession>       CashSessionsWrite       { get; }
+    IWriteRepository<Sale>              SalesWrite              { get; }
+    IWriteRepository<Invoice>           InvoicesWrite           { get; }
+
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

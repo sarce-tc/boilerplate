@@ -1,0 +1,83 @@
+@*  Smart page for create + edit customer (mirrors ProductEditPage). *@
+@page "/customers/new"
+@page "/customers/{PublicId:guid}/edit"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microservice.Client.Features.Customers.Components
+@using Microservice.Client.Features.Customers.Models
+@using Microservice.Client.Features.Customers.Services
+@using Microservice.Client.Shared.Results
+@inject ICustomersGateway Gateway
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>@(IsNew ? "Nuevo cliente" : "Editar cliente") · POS</PageTitle>
+
+<MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-4">
+    @(IsNew ? "Nuevo cliente" : $"Editar: {_model?.Name}")
+</MudText>
+
+<MudPaper Elevation="1" Class="pa-6" MaxWidth="900px">
+    @if (_loadError is not null)
+    {
+        <MudAlert Severity="Severity.Error">@_loadError.Message</MudAlert>
+    }
+    else if (_model is null)
+    {
+        <MudProgressLinear Indeterminate Color="Color.Primary" />
+    }
+    else
+    {
+        <CustomerForm @ref="_form" Model="_model" Busy="_saving" OnValidSubmit="Save" OnCancel="Cancel" />
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public Guid? PublicId { get; set; }
+
+    private CustomerFormModel? _model;
+    private CustomerForm? _form;
+    private UiError? _loadError;
+    private bool _saving;
+
+    private bool IsNew => PublicId is null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsNew)
+        {
+            _model = new CustomerFormModel();
+            return;
+        }
+
+        var result = await Gateway.GetByIdAsync(PublicId!.Value);
+        result.Match(
+            model => { _model = model; return true; },
+            err => { _loadError = err; return false; });
+    }
+
+    private async Task Save(CustomerFormModel model)
+    {
+        _saving = true;
+        var result = IsNew ? await Gateway.CreateAsync(model) : await Gateway.UpdateAsync(model);
+        _saving = false;
+
+        result.Match(
+            onSuccess: ack =>
+            {
+                Snackbar.Add(ack.Queued ? "Guardado offline: se sincronizará al reconectar." : "Cliente guardado.",
+                    ack.Queued ? Severity.Info : Severity.Success);
+                Nav.NavigateTo("/customers");
+                return true;
+            },
+            onError: err =>
+            {
+                if (err.IsValidation && err.FieldErrors is { Count: > 0 })
+                    _form?.ShowServerErrors(err.FieldErrors);
+                else
+                    Snackbar.Add(err.Message, Severity.Error);
+                return false;
+            });
+    }
+
+    private void Cancel() => Nav.NavigateTo("/customers");
+}

@@ -1,0 +1,75 @@
+@*  Smart page: customers list. Orchestrates state + gateway + navigation (mirrors ProductsPage). *@
+@page "/customers"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microservice.Client.Features.Customers.Components
+@using Microservice.Client.Features.Customers.Models
+@using Microservice.Client.Features.Customers.Services
+@using Microservice.Client.Features.Customers.State
+@implements IDisposable
+@inject CustomersState State
+@inject ICustomersGateway Gateway
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>Clientes · POS</PageTitle>
+
+<MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4" HtmlTag="h1">Clientes</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd"
+               OnClick="GoCreate">Nuevo cliente</MudButton>
+</MudStack>
+
+@if (State.HasError)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">
+        @State.Error!.Message
+        @if (!string.IsNullOrEmpty(State.Error.CorrelationId))
+        {
+            <span class="ml-2" style="opacity:.7">(id: @State.Error.CorrelationId)</span>
+        }
+    </MudAlert>
+}
+
+<MudPaper Elevation="1" Class="pa-4">
+    <CustomerTable Items="State.Items" Loading="State.IsLoading"
+                   PageCount="State.PageCount" CurrentPage="State.Page.Page"
+                   OnEdit="Edit" OnDelete="Delete" OnPageChanged="OnPageChanged" />
+</MudPaper>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        State.Changed += OnStateChanged;
+        await State.LoadAsync();
+    }
+
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    private void GoCreate() => Nav.NavigateTo("/customers/new");
+    private void Edit(CustomerListItemVm item) => Nav.NavigateTo($"/customers/{item.PublicId}/edit");
+    private Task OnPageChanged(int page) => State.GoToPageAsync(page);
+
+    private async Task Delete(CustomerListItemVm item)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            "Eliminar cliente",
+            $"¿Eliminar a \"{item.Name}\" ({item.DocNumber})?",
+            yesText: "Eliminar", cancelText: "Cancelar");
+
+        if (confirmed != true)
+            return;
+
+        var result = await Gateway.DeleteAsync(item.PublicId);
+        await result.Match(
+            onSuccess: async ack =>
+            {
+                Snackbar.Add(ack.Queued ? "Eliminación encolada (se sincronizará al reconectar)." : "Cliente eliminado.",
+                    ack.Queued ? Severity.Info : Severity.Success);
+                await State.RemoveAndReloadAsync(item.PublicId);
+            },
+            onError: err => { Snackbar.Add(err.Message, Severity.Error); return Task.CompletedTask; });
+    }
+
+    public void Dispose() => State.Changed -= OnStateChanged;
+}

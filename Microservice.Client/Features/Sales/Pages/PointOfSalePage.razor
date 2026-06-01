@@ -1,0 +1,204 @@
+@*
+    Smart POS checkout. Orchestrates cart state + barcode scanning + product/cash/sales gateways.
+    Flow: scan/add → cart line → confirm (create → confirm) → ticket. No business logic in markup;
+    cart math lives in SaleCartState, persistence in the gateways.
+*@
+@page "/pos"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microservice.Client.Features.CashRegister.State
+@using Microservice.Client.Features.Products.Services
+@using Microservice.Client.Features.Sales.Components
+@using Microservice.Client.Features.Sales.Models
+@using Microservice.Client.Features.Sales.Services
+@using Microservice.Client.Features.Sales.State
+@implements IAsyncDisposable
+@inject SaleCartState Cart
+@inject CashSessionState CashSession
+@inject IProductsGateway Products
+@inject ISalesGateway Sales
+@inject IBarcodeScanner Scanner
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Venta · POS</PageTitle>
+
+<MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-4">Punto de venta</MudText>
+
+@if (!CashSession.HasActiveSession)
+{
+    <MudAlert Severity="Severity.Warning" Class="mb-4">
+        No hay una caja abierta. Abrí un turno de caja para poder vender.
+        <MudButton Href="/cash" Variant="Variant.Text" Color="Color.Inherit">Ir a Caja</MudButton>
+    </MudAlert>
+}
+
+<MudGrid>
+    <MudItem xs="12" md="7">
+        <MudPaper Elevation="1" Class="pa-3 mb-3">
+            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                <MudIcon Icon="@Icons.Material.Filled.QrCodeScanner" Color="Color.Primary" />
+                <MudTextField @bind-Value="_manualCode" Label="Código de barras / SKU" Variant="Variant.Outlined"
+                              Margin="Margin.Dense" Immediate FullWidth
+                              OnKeyUp="OnManualKeyUp" aria-label="Código de barras" />
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddByCode" Disabled="_resolving">
+                    Agregar
+                </MudButton>
+            </MudStack>
+            <MudText Typo="Typo.caption" Class="mt-1" Color="Color.Secondary">
+                El lector de código de barras agrega productos automáticamente.
+            </MudText>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-3">
+            <CartView Lines="Cart.Lines" Subtotal="Cart.Subtotal" TaxAmount="Cart.TaxAmount" Total="Cart.Total"
+                      OnQuantityChanged="OnQuantityChanged" OnRemove="OnRemove" />
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="5">
+        <MudPaper Elevation="1" Class="pa-4" Style="position:sticky;top:88px">
+            <MudText Typo="Typo.h6" Class="mb-2">Resumen</MudText>
+            <MudStack Row Justify="Justify.SpaceBetween"><span>Ítems</span><span>@Cart.ItemCount</span></MudStack>
+            <MudStack Row Justify="Justify.SpaceBetween" Class="mb-4">
+                <MudText Typo="Typo.h5">Total</MudText>
+                <MudText Typo="Typo.h5">@Cart.Total.ToString("N2")</MudText>
+            </MudStack>
+
+            <MudButton Variant="Variant.Filled" Color="Color.Success" FullWidth Size="Size.Large"
+                       StartIcon="@Icons.Material.Filled.PointOfSale"
+                       Disabled="@(Cart.IsEmpty || !CashSession.HasActiveSession || _checkingOut)"
+                       OnClick="Checkout">
+                @if (_checkingOut)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate Class="mr-2" />
+                }
+                Confirmar venta
+            </MudButton>
+
+            <MudButton Variant="Variant.Text" Color="Color.Error" FullWidth Class="mt-2"
+                       Disabled="@(Cart.IsEmpty || _checkingOut)" OnClick="ClearCart">
+                Vaciar carrito
+            </MudButton>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private string _manualCode = string.Empty;
+    private bool _resolving;
+    private bool _checkingOut;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Cart.Changed += OnCartChanged;
+        await CashSession.LoadActiveAsync();
+
+        Scanner.Scanned += OnScanned;
+        await Scanner.StartAsync();
+    }
+
+    private void OnCartChanged() => InvokeAsync(StateHasChanged);
+
+    // ── Adding products ─────────────────────────────────────────────────────
+
+    private async void OnScanned(string code) => await InvokeAsync(() => ResolveAndAddAsync(code));
+
+    private Task OnManualKeyUp(KeyboardEventArgs e) =>
+        e.Key is "Enter" or "NumpadEnter" ? AddByCode() : Task.CompletedTask;
+
+    private async Task AddByCode()
+    {
+        var code = _manualCode.Trim();
+        if (string.IsNullOrEmpty(code))
+            return;
+        await ResolveAndAddAsync(code);
+        _manualCode = string.Empty;
+    }
+
+    private async Task ResolveAndAddAsync(string code)
+    {
+        _resolving = true;
+        var result = await Products.GetByBarcodeAsync(code);
+        _resolving = false;
+
+        result.Match(
+            product => { Cart.AddProduct(product); return true; },
+            err =>
+            {
+                Snackbar.Add(err.Kind == ErrorKind.NotFound ? $"Sin producto para el código «{code}»." : err.Message,
+                    Severity.Warning);
+                return false;
+            });
+    }
+
+    // ── Cart edits ──────────────────────────────────────────────────────────
+
+    private void OnQuantityChanged((Guid ProductPublicId, decimal Quantity) change) =>
+        Cart.SetQuantity(change.ProductPublicId, change.Quantity);
+
+    private void OnRemove(Guid productPublicId) => Cart.Remove(productPublicId);
+
+    private void ClearCart() => Cart.Clear();
+
+    // ── Checkout: create → confirm → ticket ───────────────────────────────────
+
+    private async Task Checkout()
+    {
+        if (Cart.IsEmpty || CashSession.Active is null)
+            return;
+
+        _checkingOut = true;
+        try
+        {
+            var createResult = await Sales.CreateAsync(Cart.ToCreateRequest(CashSession.Active.PublicId));
+            if (createResult.IsFailure)
+            {
+                Snackbar.Add(createResult.Error!.Message, Severity.Error);
+                return;
+            }
+
+            var ack = createResult.Value;
+            if (ack.Queued)
+            {
+                Snackbar.Add("Sin conexión: la venta se registrará al reconectar.", Severity.Info);
+                Cart.Clear();
+                return;
+            }
+
+            var saleId = ack.ResourceId!.Value;
+            var confirmResult = await Sales.ConfirmAsync(saleId);
+            if (confirmResult.IsFailure)
+            {
+                // Sale was created (Pending) but not confirmed — surface why (e.g. 409 stock/caja).
+                Snackbar.Add($"Venta creada pero no confirmada: {confirmResult.Error!.Message}", Severity.Error);
+                return;
+            }
+
+            Snackbar.Add("Venta confirmada.", Severity.Success);
+            Cart.Clear();
+            await ShowTicketAsync(saleId);
+        }
+        finally
+        {
+            _checkingOut = false;
+        }
+    }
+
+    private async Task ShowTicketAsync(Guid saleId)
+    {
+        var ticket = await Sales.GetTicketAsync(saleId);
+        if (ticket.IsFailure)
+            return;
+
+        var parameters = new DialogParameters<TicketDialog> { { x => x.Ticket, ticket.Value } };
+        await DialogService.ShowAsync<TicketDialog>("Ticket", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Cart.Changed -= OnCartChanged;
+        Scanner.Scanned -= OnScanned;
+        await Scanner.DisposeAsync();
+    }
+}

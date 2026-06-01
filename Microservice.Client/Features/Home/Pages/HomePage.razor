@@ -1,0 +1,22 @@
+@page "/"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+
+<PageTitle>Inicio · POS</PageTitle>
+
+<MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-4">Punto de venta</MudText>
+
+<MudGrid>
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Outlined>
+            <MudCardContent>
+                <MudText Typo="Typo.h6">Catálogo</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Gestión de productos, precios y códigos de barras.
+                </MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Href="/products" Variant="Variant.Text" Color="Color.Primary">Abrir</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+</MudGrid>

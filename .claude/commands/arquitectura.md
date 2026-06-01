@@ -23,7 +23,28 @@ DOMAIN_SRC:   Microservice.Domain
 GUARD:  task received
 ACTION: parse → resolve tech (EF|Dapper) × operation (Command|Query|Service|DI)
         detect session_temperature: warm = reference files in context | cold
+        detect task_scope:
+          · SINGLE  = una sola operación (1 command/query/service/DI)
+          · PROGRAM = ≥2 aggregates, o un vertical completo (entity + CRUD + queries + API),
+                      o ≥2 operaciones que comparten el mismo archetype
+NEXT:   → S_WARMUP    [task_scope == PROGRAM · session cold]
+        → S1_CLASSIFY  [otherwise]
+
+## STATE: S_WARMUP   [program preflight — corre A LO SUMO UNA VEZ por sesión]
+GUARD:  task_scope == PROGRAM · session cold
+ACTION: Read del ARCHETYPE_SET en UN solo lote. Es carga determinista de referencias, NO exploración:
+        el set está enumerado y es finito — sin Glob, sin full-tree scan, sin rediscovery.
+        Tras el lote: session_temperature := warm para TODOS los aggregates del programa.
+        El loop por aggregate pasa a ser S1_CLASSIFY → S2_WARM (cero re-lecturas).
+        Bajar a S3_LOAD solo para un contract que el ARCHETYPE_SET no cubra (p.ej. specific-filter).
 NEXT:   → S1_CLASSIFY
+
+### ARCHETYPE_SET — el vertical canónico, leído UNA vez para un programa
+EF:     ef.entity · ef.entity-child · ef.dbcontext · ef.uow · ef.uow-concrete · ef.contracts ·
+        ef.base-repo · cmd.create · cmd.update · query.predicate · query.with-children ·
+        query.paginated · mapping · controller · di
+Dapper: + dapper.base-read · dapper.base-write · dapper.uow-concrete · dapper.cmd.create
+(Los paths salen de REFERENCE_FILES. Una vez en contexto, NO se vuelven a leer en el programa.)
 
 ## STATE: S1_CLASSIFY
 GUARD:  tech + operation resolved
@@ -67,13 +88,25 @@ La superficie genérica es amplia: la mayoría de casos (incluido ILike y set-ba
 | (convención OPCIONAL) encapsular ILike reutilizable como método nombrado | `IMyEntityReadRepository` | `query.specific-filter` |
 
 ### DECISION_SERVICE
+Discriminador (responder EN ORDEN; la primera que aplique decide):
+  1. ¿La operación hace **I/O o toca un sistema externo** (red, SOAP/HTTP, impresora, email, SMS,
+     pago, reloj/now como dependencia, cache)? → **PUERTO DE INFRAESTRUCTURA** (fila 6).
+  2. ¿Es **lógica de dominio pura, sin I/O**, que coordina ≥2 aggregates ya cargados? → **DOMAIN SERVICE** (fila 5).
+  3. ¿Es un **helper de consulta** (lookup por publicId)? → **LOOKUP SERVICE** (`Application.Services`).
+  4. Si no, no es servicio: usar repos genéricos.
+
 | Context | Contract | Namespace |
 |---|---|---|
 | Query — standard lookup by publicId | `IExampleService` → `FindAsync` / `FindWithItemsAsync` | `Application.Services` |
 | Query — custom predicate / projection | `IReadRepository<T>` | — |
 | Command — tracked scalar | `IExampleService.FindTrackedAsync` | `Application.Services` |
 | Command — tracked + children | `IReadRepository<T>` (`includeProperties`, `disableTracking:false`) | — |
-| Cross-aggregate operation | `IExampleService` → `TransferItem` / `MergeInto` | `Application.Contracts.Interfaces` |
+| Cross-aggregate operation — **lógica PURA, sin I/O** | `IExampleService` → `TransferItem` / `MergeInto` | `Application.Contracts.Interfaces` (impl en `Infrastructure\Services`) |
+| **Side-effect / sistema externo** (gateway AFIP, impresora, email, pago, SMS, cache) — **hace I/O** | `I{Port}` (puerto) + records request/result al lado | `Application.Contracts.Infrastructure` (impl en `Infrastructure\Services`, registrar en DI) |
+
+> Puerto de infraestructura: la interfaz + sus DTOs (request/result) viven en `Application.Contracts.Infrastructure`
+> (junto a `ICacheService`); la implementación concreta (incl. STUB) y su `AddScoped` van en Infrastructure.
+> El handler que lo consume lo inyecta como cualquier dependencia. Archetype: `port.contract` / `port.impl`.
 
 ### REFERENCE_FILES
 | operation | path |
@@ -121,11 +154,14 @@ La superficie genérica es amplia: la mayoría de casos (incluido ILike y set-ba
 | dapper.controller | `{API_SRC}\Controllers\ExamplesDapperController.cs` |
 | svc.lookup | `{APP_SRC}\Services\IExampleService.cs` · `{APP_SRC}\Services\ExampleService.cs` |
 | svc.domain | Glob `{INFRA_SRC}\Services\` → read matching file |
+| port.contract | `{APP_SRC}\Contracts\Infrastructure\ICacheService.cs` |
+| port.impl | `{INFRA_SRC}\Cache\MemoryCacheService.cs` |
 
 ---
 
 ## STATE: S2_WARM
 GUARD:  REFERENCE_FILES[operation] already in context
+        (warm de origen, O sesión calentada por S_WARMUP en un PROGRAM)
 ACTION: expand template from memory · write files per PATH_PATTERNS · apply GLOBAL_INVARIANTS
 NEXT:   → S5_VALIDATE
 
@@ -168,6 +204,7 @@ DTOs:         {APP_SRC}\DTOs\{Dto}Dto.cs
 Repos EF:     {INFRA_SRC}\Repositories\EF\{Entity}(Read|Write)Repository.cs
 Repos Dapper: {INFRA_SRC}\Repositories\Dapper\{Entity}(Read|Write)Repository.cs
 Services:     {APP_SRC}\Contracts\Interfaces\I{Service}.cs · {INFRA_SRC}\Services\{Service}.cs
+Ports (infra):{APP_SRC}\Contracts\Infrastructure\I{Port}.cs (+ records request/result) · {INFRA_SRC}\Services\{Port}.cs · DI
 Controllers:  {API_SRC}\Controllers\{Aggregate}Controller.cs
 ```
 
@@ -181,7 +218,8 @@ Controllers:  {API_SRC}\Controllers\{Aggregate}Controller.cs
 
 {APP_SRC}\
   Contracts\
-    Interfaces\          I{Service}.cs  ← domain services (cross-aggregate; implemented in Infrastructure)
+    Interfaces\          I{Service}.cs  ← domain services (cross-aggregate, lógica PURA sin I/O; impl en Infrastructure)
+    Infrastructure\      ICacheService.cs I{Port}.cs  ← puertos de infra (I/O / sistema externo; impl en Infrastructure + DI)
     Persistence\EF\      ILINQRepository.cs IUnitOfWork.cs ISqlRepository.cs
                          IExampleWriteRepository.cs IExampleReadRepository.cs
     Persistence\Dapper\  IUnitOfWork.cs IReadRepository.cs IWriteRepository.cs

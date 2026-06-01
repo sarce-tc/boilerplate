@@ -36,6 +36,37 @@ public sealed class UnitOfWork(ExampleDbContext context) : IUnitOfWork
     public IExampleWriteRepository   ExamplesWrite   => LazyExamplesWrite;
     public IWriteRepository<Example> WriteRepository => LazyExamplesWrite;
 
+    // ── POS aggregates (generic-first) ────────────────────────────────────────
+    // Superficie genérica de LINQRepository<T>: sin repo específico ni doble tracking
+    // (comparten el mismo ExampleDbContext scoped que SaveChangesAsync confirma).
+    private LINQRepository<Product>? _products;
+    public IWriteRepository<Product> ProductsWrite =>
+        _products ??= new LINQRepository<Product>(context);
+
+    private LINQRepository<Customer>? _customers;
+    public IWriteRepository<Customer> CustomersWrite =>
+        _customers ??= new LINQRepository<Customer>(context);
+
+    private LINQRepository<StockItem>? _stockItems;
+    public IWriteRepository<StockItem> StockItemsWrite =>
+        _stockItems ??= new LINQRepository<StockItem>(context);
+
+    private LINQRepository<InventoryMovement>? _inventoryMovements;
+    public IWriteRepository<InventoryMovement> InventoryMovementsWrite =>
+        _inventoryMovements ??= new LINQRepository<InventoryMovement>(context);
+
+    private LINQRepository<CashSession>? _cashSessions;
+    public IWriteRepository<CashSession> CashSessionsWrite =>
+        _cashSessions ??= new LINQRepository<CashSession>(context);
+
+    private LINQRepository<Sale>? _sales;
+    public IWriteRepository<Sale> SalesWrite =>
+        _sales ??= new LINQRepository<Sale>(context);
+
+    private LINQRepository<Invoice>? _invoices;
+    public IWriteRepository<Invoice> InvoicesWrite =>
+        _invoices ??= new LINQRepository<Invoice>(context);
+
     public async Task<int> SaveChangesAsync(CancellationToken ct = default) =>
         await context.SaveChangesAsync(ct);
 }

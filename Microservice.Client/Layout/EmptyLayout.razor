@@ -1,0 +1,10 @@
+@* Chromeless layout for pre-auth screens (login). Still needs MudBlazor providers. *@
+@inherits LayoutComponentBase
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudSnackbarProvider />
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center" Style="min-height:100vh">
+    @Body
+</MudContainer>

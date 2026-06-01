@@ -29,7 +29,18 @@ The single biggest failure mode is exploring instead of executing. Forbidden:
 - Namespace rediscovery
 - Reading files not specified by ARQ REFERENCE_FILES for the current operation
 
-ARQ `S3_LOAD` reads exactly 1 reference file. ARQ `S_ERROR` budget: 1 Glob + 1 Read max.
+Reference loading is **scoped**, not a flat cap. What is forbidden is *unbounded discovery*
+(Glob loops, full-tree scans, rediscovery); reading an enumerated, finite set is deterministic
+loading, NOT exploration:
+
+- **Single operation** (one command/query/service/DI edit): ARQ `S3_LOAD` reads **exactly 1**
+  reference file — the ejemplar that matches the decided contract.
+- **Program** (≥2 aggregates, or a full vertical: entity + CRUD + queries + API): ARQ `S_WARMUP`
+  reads the bounded `ARCHETYPE_SET` **once**, up front. The session is then *warm* and every
+  subsequent aggregate uses `S2_WARM` (zero re-reads). Re-reading the archetype per aggregate is
+  the waste this exception removes.
+
+ARQ `S_ERROR` budget: 1 Glob + 1 Read max.
 
 ---
 

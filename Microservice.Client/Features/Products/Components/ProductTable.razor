@@ -1,0 +1,57 @@
+@*
+    Dumb/presentational catalog grid. Pure rendering + event callbacks; no state, no HTTP.
+    The smart page owns data and reacts to OnEdit/OnDelete/OnPageChanged.
+*@
+@using Microservice.Client.Features.Products.Models
+
+<MudTable Items="Items" Loading="Loading" Hover Dense Breakpoint="Breakpoint.Sm"
+          T="ProductListItemVm" Class="pos-table">
+    <HeaderContent>
+        <MudTh>SKU</MudTh>
+        <MudTh>Nombre</MudTh>
+        <MudTh>Categoría</MudTh>
+        <MudTh Style="text-align:right">Precio</MudTh>
+        <MudTh Style="text-align:right">Precio c/IVA</MudTh>
+        <MudTh>Estado</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="SKU">@context.Sku</MudTd>
+        <MudTd DataLabel="Nombre">@context.Name</MudTd>
+        <MudTd DataLabel="Categoría">@(context.CategoryName ?? "—")</MudTd>
+        <MudTd DataLabel="Precio" Style="text-align:right">@context.Price.ToString("N2")</MudTd>
+        <MudTd DataLabel="Precio c/IVA" Style="text-align:right">@context.PriceWithTax.ToString("N2")</MudTd>
+        <MudTd DataLabel="Estado">
+            <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Default)">
+                @(context.IsActive ? "Activo" : "Inactivo")
+            </MudChip>
+        </MudTd>
+        <MudTd Style="text-align:right">
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                           aria-label="Editar" OnClick="@(() => OnEdit.InvokeAsync(context))" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                           aria-label="Eliminar" OnClick="@(() => OnDelete.InvokeAsync(context))" />
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText Class="pa-4">No hay productos para mostrar.</MudText>
+    </NoRecordsContent>
+</MudTable>
+
+@if (PageCount > 1)
+{
+    <div class="d-flex justify-center mt-4">
+        <MudPagination Count="PageCount" Selected="CurrentPage"
+                       SelectedChanged="@(p => OnPageChanged.InvokeAsync(p))" Color="Color.Primary" />
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<ProductListItemVm> Items { get; set; } = [];
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public int PageCount { get; set; }
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public EventCallback<ProductListItemVm> OnEdit { get; set; }
+    [Parameter] public EventCallback<ProductListItemVm> OnDelete { get; set; }
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+}

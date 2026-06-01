@@ -1,0 +1,163 @@
+@*
+    Smart page: cash register. Orchestrates CashSessionState + gateway. If no session is open it
+    shows the open form; otherwise the session card, movement entry, ledger, and the arqueo (close)
+    flow. No business logic in markup — balances come from the detail VM, persistence from the gateway.
+*@
+@page "/cash"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microservice.Client.Features.CashRegister.Components
+@using Microservice.Client.Features.CashRegister.Models
+@using Microservice.Client.Features.CashRegister.Services
+@using Microservice.Client.Features.CashRegister.State
+@implements IDisposable
+@inject CashSessionState CashSession
+@inject ICashGateway Gateway
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Caja · POS</PageTitle>
+
+<MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-4">Caja</MudText>
+
+@if (CashSession.IsLoading)
+{
+    <MudProgressLinear Indeterminate Color="Color.Primary" />
+}
+else if (!CashSession.HasActiveSession)
+{
+    <MudPaper Elevation="1" Class="pa-6" MaxWidth="700px">
+        <MudText Typo="Typo.h6" Class="mb-4">Abrir turno de caja</MudText>
+        <OpenSessionForm Model="_openModel" Busy="_busy" OnValidSubmit="OpenSession" />
+    </MudPaper>
+}
+else if (_detail is not null)
+{
+    <MudGrid>
+        <MudItem xs="12" md="5">
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudText Typo="Typo.h6">@_detail.RegisterName</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    Abierta @_detail.OpenedAt.LocalDateTime.ToString("g") @(_detail.OpenedBy is { } by ? $"· {by}" : "")
+                </MudText>
+                <MudDivider Class="my-3" />
+                <MudStack Row Justify="Justify.SpaceBetween"><span>Saldo inicial</span><span>@_detail.OpeningBalance.ToString("N2")</span></MudStack>
+                <MudStack Row Justify="Justify.SpaceBetween" Class="mt-1">
+                    <MudText Typo="Typo.h6">Saldo actual</MudText>
+                    <MudText Typo="Typo.h6">@_detail.CurrentBalance.ToString("N2")</MudText>
+                </MudStack>
+                <MudButton Variant="Variant.Filled" Color="Color.Error" FullWidth Class="mt-4"
+                           StartIcon="@Icons.Material.Filled.Lock" Disabled="_busy" OnClick="OpenArqueo">
+                    Cerrar caja (arqueo)
+                </MudButton>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="7">
+            <MudPaper Elevation="1" Class="pa-4 mb-3">
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Registrar movimiento</MudText>
+                <MovementForm Model="_movementModel" Busy="_busy" OnValidSubmit="RegisterMovement" />
+            </MudPaper>
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Movimientos del turno</MudText>
+                <CashMovementsTable Movements="_detail.Movements" />
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private CashSessionDetailVm? _detail;
+    private OpenSessionFormModel _openModel = new();
+    private MovementFormModel _movementModel = new();
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CashSession.Changed += OnStateChanged;
+        await CashSession.LoadActiveAsync();
+        await LoadDetailAsync();
+    }
+
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task LoadDetailAsync()
+    {
+        if (CashSession.Active is null) { _detail = null; return; }
+
+        var result = await Gateway.GetByIdAsync(CashSession.Active.PublicId);
+        result.Match(d => { _detail = d; return true; },
+                     err => { Snackbar.Add(err.Message, Severity.Error); return false; });
+    }
+
+    private async Task OpenSession(OpenSessionFormModel model)
+    {
+        _busy = true;
+        var result = await CashSession.OpenAsync(model.ToRequest());
+        _busy = false;
+
+        await result.Match(
+            onSuccess: async ack =>
+            {
+                if (ack.Queued) { Snackbar.Add("Apertura encolada (se sincronizará al reconectar).", Severity.Info); }
+                else { Snackbar.Add("Caja abierta.", Severity.Success); _openModel = new(); await LoadDetailAsync(); }
+            },
+            onError: err => { Snackbar.Add(err.Message, Severity.Error); return Task.CompletedTask; });
+    }
+
+    private async Task RegisterMovement(MovementFormModel model)
+    {
+        if (CashSession.Active is null) return;
+
+        _busy = true;
+        var result = await Gateway.RegisterMovementAsync(CashSession.Active.PublicId, model.ToRequest());
+        _busy = false;
+
+        await result.Match(
+            onSuccess: async ack =>
+            {
+                Snackbar.Add(ack.Queued ? "Movimiento encolado." : "Movimiento registrado.",
+                    ack.Queued ? Severity.Info : Severity.Success);
+                _movementModel = new();
+                await LoadDetailAsync();
+            },
+            onError: err => { Snackbar.Add(err.Message, Severity.Error); return Task.CompletedTask; });
+    }
+
+    private async Task OpenArqueo()
+    {
+        if (_detail is null || CashSession.Active is null) return;
+
+        var parameters = new DialogParameters<ArqueoDialog> { { x => x.ExpectedBalance, _detail.CurrentBalance } };
+        var dialog = await DialogService.ShowAsync<ArqueoDialog>("Arqueo de caja", parameters);
+        var dialogResult = await dialog.Result;
+
+        if (dialogResult is null || dialogResult.Canceled || dialogResult.Data is not CloseSessionFormModel form)
+            return;
+
+        _busy = true;
+        var result = await Gateway.CloseSessionAsync(CashSession.Active.PublicId, form.ToRequest());
+        _busy = false;
+
+        await result.Match(
+            onSuccess: async arqueo =>
+            {
+                await ShowArqueoResultAsync(arqueo);
+                await CashSession.LoadActiveAsync(); // active becomes null after close
+                _detail = null;
+            },
+            onError: err => { Snackbar.Add(err.Message, Severity.Error); return Task.CompletedTask; });
+    }
+
+    private Task ShowArqueoResultAsync(CashCloseResultVm r)
+    {
+        var verdict = r.IsBalanced ? "Caja cuadrada ✔" : r.IsShortage ? "Faltante de caja" : "Sobrante de caja";
+        return DialogService.ShowMessageBox(
+            "Arqueo realizado",
+            (MarkupString)$"<p>Esperado: <strong>{r.Expected:N2}</strong></p>" +
+                          $"<p>Declarado: <strong>{r.Declared:N2}</strong></p>" +
+                          $"<p>Diferencia: <strong>{r.Difference:N2}</strong> — {verdict}</p>",
+            yesText: "Aceptar");
+    }
+
+    public void Dispose() => CashSession.Changed -= OnStateChanged;
+}

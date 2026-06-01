@@ -1,0 +1,47 @@
+@*  Dumb customers grid. Pure rendering + event callbacks. *@
+@using Microservice.Client.Features.Customers.Models
+
+<MudTable Items="Items" Loading="Loading" Hover Dense T="CustomerListItemVm" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        <MudTh>Nombre</MudTh>
+        <MudTh>Documento</MudTh>
+        <MudTh>Condición IVA</MudTh>
+        <MudTh>Estado</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Nombre">@context.Name</MudTd>
+        <MudTd DataLabel="Documento">@CustomerLabels.Doc(context.DocType) @context.DocNumber</MudTd>
+        <MudTd DataLabel="Condición IVA">@CustomerLabels.Tax(context.TaxCondition)</MudTd>
+        <MudTd DataLabel="Estado">
+            <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Default)">
+                @(context.IsActive ? "Activo" : "Inactivo")
+            </MudChip>
+        </MudTd>
+        <MudTd Style="text-align:right">
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                           aria-label="Editar" OnClick="@(() => OnEdit.InvokeAsync(context))" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                           aria-label="Eliminar" OnClick="@(() => OnDelete.InvokeAsync(context))" />
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent><MudText Class="pa-4">No hay clientes para mostrar.</MudText></NoRecordsContent>
+</MudTable>
+
+@if (PageCount > 1)
+{
+    <div class="d-flex justify-center mt-4">
+        <MudPagination Count="PageCount" Selected="CurrentPage"
+                       SelectedChanged="@(p => OnPageChanged.InvokeAsync(p))" Color="Color.Primary" />
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<CustomerListItemVm> Items { get; set; } = [];
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public int PageCount { get; set; }
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public EventCallback<CustomerListItemVm> OnEdit { get; set; }
+    [Parameter] public EventCallback<CustomerListItemVm> OnDelete { get; set; }
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+}

@@ -13,6 +13,17 @@
 
 ---
 
+## MIGRATIONS_OPS  [comandos `dotnet ef`]
+
+Crear migración:
+    dotnet ef migrations add Add_MyEntity --project Microservice.Infrastructure --startup-project Microservice.API
+Aplicar a la base:
+    dotnet ef database update --project Microservice.Infrastructure --startup-project Microservice.API
+
+Regla: NO usar `--no-build` (`migrations add` compila antes de generar el `.cs`, así que `--no-build` corre sobre un assembly desactualizado).
+
+---
+
 ## STATE: S0_INIT
 GUARD:  aggregate name + tech (EF|Dapper) provided
 ACTION: resolve MyEntity = provided name
@@ -24,7 +35,9 @@ NEXT:   → S1_EF      [tech == EF]
 # ── EF CORE PATH ─────────────────────────────────────────────────────────────
 
 ## STATE: S1_EF
-ACTION: Read cmd.create + cmd.update from /arquitectura REFERENCE_FILES
+GUARD:  cold standalone. Si la sesión ya está warm (p.ej. /arquitectura S_WARMUP corrió para un
+        programa multi-aggregate, o el ARCHETYPE_SET ya está en contexto) → SALTAR la lectura.
+ACTION: [solo si cold] Read cmd.create + cmd.update from /arquitectura REFERENCE_FILES
 NEXT:   → S2_DOMAIN
 
 ## STATE: S2_DOMAIN
@@ -40,8 +53,10 @@ ACTION: edit `{INFRA_SRC}\Persistence\ExampleDbContext.cs`
         + `DbSet<MyEntity>` [+ `DbSet<MyEntityItem>`]
         + `HasIndex(e=>e.PublicId).IsUnique()` · `HasMaxLength` · `IsRequired`
         [if children] + `Navigation(e=>e.Items).HasField("_items").UsePropertyAccessMode(Field)`
-        run: dotnet ef migrations add Add_MyEntity --project Microservice.Infrastructure --startup-project Microservice.API
-             dotnet ef database update --project Microservice.Infrastructure --startup-project Microservice.API
+        run (⚠ ver MIGRATIONS_OPS — NUNCA `--no-build`):
+             dotnet ef migrations add Add_MyEntity --project Microservice.Infrastructure --startup-project Microservice.API
+             dotnet ef database update             --project Microservice.Infrastructure --startup-project Microservice.API
+        PROGRAM: se permite diferir — `add` por cada aggregate y un único `database update` al final.
 NEXT:   → S4_CONTRACTS
 
 ## STATE: S4_CONTRACTS
@@ -50,6 +65,11 @@ ACTION: evaluate each independently:
         `IMyEntityReadRepository`:  ONLY IF → ILike · complex join · filter not in `IReadRepository<T>`
         `IMyEntityWriteRepository`: ONLY IF → write operation not in `IWriteRepository<T>`
         `IUnitOfWork`:              ADD lazy property ONLY IF IMyEntityWriteRepository created
+        Domain service (PURO):      ONLY IF → lógica cross-aggregate sin I/O → `Application.Contracts.Interfaces` + impl `Infrastructure\Services` + DI
+        Puerto de infraestructura:  ONLY IF → la operación hace I/O / usa sistema externo (gateway, impresora,
+                                    email, pago) → ver ARQ DECISION_SERVICE fila «side-effect»: interfaz +
+                                    records en `Application.Contracts.Infrastructure`, impl (o STUB) en
+                                    `Infrastructure\Services` + `AddScoped` en DI. Archetype: `port.contract`/`port.impl`.
 NEXT:   → S5_APPLICATION
 
 ## STATE: S5_APPLICATION
@@ -84,7 +104,8 @@ NEXT:   → S9_VALIDATE
 # ── DAPPER PATH ──────────────────────────────────────────────────────────────
 
 ## STATE: S1_DAPPER
-ACTION: Read dapper.base-read + dapper.base-write + dapper.uow-concrete + dapper.cmd.create
+GUARD:  cold standalone. Si la sesión ya está warm (S_WARMUP o ARCHETYPE_SET en contexto) → SALTAR.
+ACTION: [solo si cold] Read dapper.base-read + dapper.base-write + dapper.uow-concrete + dapper.cmd.create
         from /arquitectura REFERENCE_FILES (dapper.cmd.create = canonical TX handler shape)
 NEXT:   → S2_DOMAIN [same as EF]
 

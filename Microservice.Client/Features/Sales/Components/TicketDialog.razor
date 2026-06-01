@@ -1,0 +1,33 @@
+@*
+    Dumb dialog that renders the server-produced ticket. The backend returns HTML
+    (TicketDocument), shown verbatim via MarkupString. Print delegates to window.print().
+*@
+@using Microservice.Client.Features.Sales.Models
+@inject IJSRuntime JS
+
+<MudDialog>
+    <DialogContent>
+        <div class="ticket-surface" style="max-height:60vh;overflow:auto">
+            @if (Ticket.ContentType.Contains("html", StringComparison.OrdinalIgnoreCase))
+            {
+                @((MarkupString)Ticket.Content)
+            }
+            else
+            {
+                <pre style="white-space:pre-wrap">@Ticket.Content</pre>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close">Cerrar</MudButton>
+        <MudButton Color="Color.Primary" StartIcon="@Icons.Material.Filled.Print" OnClick="Print">Imprimir</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+    [Parameter, EditorRequired] public TicketVm Ticket { get; set; } = default!;
+
+    private async Task Print() => await JS.InvokeVoidAsync("window.print");
+    private void Close() => Dialog.Close();
+}

@@ -1,0 +1,70 @@
+@*  Dumb form for create/edit customer. Raises OnValidSubmit; server errors pushed via ShowServerErrors. *@
+@using Microservice.Client.Application.Validation
+@using Microservice.Client.Features.Customers.Models
+
+<EditForm Model="Model" OnValidSubmit="HandleValidSubmit">
+    <FluentValidationValidator @ref="_validator" TModel="CustomerFormModel" />
+
+    <MudGrid>
+        <MudItem xs="12" sm="6">
+            <MudTextField @bind-Value="Model.Name" Label="Nombre / Razón social" Variant="Variant.Outlined"
+                          For="@(() => Model.Name)" />
+        </MudItem>
+        <MudItem xs="12" sm="3">
+            <MudSelect @bind-Value="Model.DocType" Label="Tipo doc." Variant="Variant.Outlined" For="@(() => Model.DocType)">
+                @foreach (var t in Enum.GetValues<DocumentType>())
+                {
+                    <MudSelectItem Value="t">@CustomerLabels.Doc(t)</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="3">
+            <MudTextField @bind-Value="Model.DocNumber" Label="Nro. documento" Variant="Variant.Outlined"
+                          For="@(() => Model.DocNumber)" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudSelect @bind-Value="Model.TaxCondition" Label="Condición IVA" Variant="Variant.Outlined"
+                       For="@(() => Model.TaxCondition)">
+                @foreach (var t in Enum.GetValues<TaxCondition>())
+                {
+                    <MudSelectItem Value="t">@CustomerLabels.Tax(t)</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTextField @bind-Value="Model.Email" Label="Email" Variant="Variant.Outlined" For="@(() => Model.Email)" />
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTextField @bind-Value="Model.Phone" Label="Teléfono" Variant="Variant.Outlined" For="@(() => Model.Phone)" />
+        </MudItem>
+        <MudItem xs="12" sm="6" Class="d-flex align-center">
+            <MudSwitch @bind-Value="Model.IsActive" Label="Activo" Color="Color.Primary" />
+        </MudItem>
+        <MudItem xs="12">
+            <MudTextField @bind-Value="Model.Address" Label="Dirección" Variant="Variant.Outlined"
+                          For="@(() => Model.Address)" />
+        </MudItem>
+    </MudGrid>
+
+    <MudStack Row Justify="Justify.FlexEnd" Class="mt-4" Spacing="2">
+        <MudButton Variant="Variant.Text" OnClick="OnCancel" Disabled="Busy">Cancelar</MudButton>
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="Busy">
+            @if (Busy) { <MudProgressCircular Size="Size.Small" Indeterminate Class="mr-2" /> }
+            Guardar
+        </MudButton>
+    </MudStack>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired] public CustomerFormModel Model { get; set; } = default!;
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback<CustomerFormModel> OnValidSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private FluentValidationValidator<CustomerFormModel>? _validator;
+
+    private Task HandleValidSubmit() => OnValidSubmit.InvokeAsync(Model);
+
+    public void ShowServerErrors(IReadOnlyDictionary<string, string[]> fieldErrors) =>
+        _validator?.AddServerErrors(fieldErrors);
+}

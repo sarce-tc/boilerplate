@@ -1,0 +1,42 @@
+@*  Dumb stock-balances grid. Pure rendering + callbacks. *@
+@using Microservice.Client.Features.Inventory.Models
+
+<MudTable Items="Items" Loading="Loading" Hover Dense T="StockItemVm" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        <MudTh>Producto</MudTh>
+        <MudTh>SKU</MudTh>
+        <MudTh Style="text-align:right">Stock</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Producto">@(context.ProductName ?? context.ProductPublicId.ToString()[..8])</MudTd>
+        <MudTd DataLabel="SKU">@(context.Sku ?? "—")</MudTd>
+        <MudTd DataLabel="Stock" Style="text-align:right">
+            <MudChip T="string" Size="Size.Small" Color="@(context.IsOutOfStock ? Color.Error : Color.Default)">
+                @context.QuantityOnHand.ToString("0.##")
+            </MudChip>
+        </MudTd>
+        <MudTd Style="text-align:right">
+            <MudIconButton Icon="@Icons.Material.Filled.History" Size="Size.Small"
+                           aria-label="Ver movimientos" OnClick="@(() => OnView.InvokeAsync(context))" />
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent><MudText Class="pa-4">No hay registros de stock.</MudText></NoRecordsContent>
+</MudTable>
+
+@if (PageCount > 1)
+{
+    <div class="d-flex justify-center mt-4">
+        <MudPagination Count="PageCount" Selected="CurrentPage"
+                       SelectedChanged="@(p => OnPageChanged.InvokeAsync(p))" Color="Color.Primary" />
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<StockItemVm> Items { get; set; } = [];
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public int PageCount { get; set; }
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public EventCallback<StockItemVm> OnView { get; set; }
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+}

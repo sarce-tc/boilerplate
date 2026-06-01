@@ -1,0 +1,29 @@
+@*  Dumb form: register a cash movement. Raises OnValidSubmit with the model. *@
+@using Microservice.Client.Application.Validation
+@using Microservice.Client.Features.CashRegister.Models
+
+<EditForm Model="Model" OnValidSubmit="HandleSubmit">
+    <FluentValidationValidator TModel="MovementFormModel" />
+    <MudStack Row Spacing="2" AlignItems="AlignItems.Start" Wrap="Wrap.Wrap">
+        <MudSelect @bind-Value="Model.MovementType" Label="Tipo" Variant="Variant.Outlined"
+                   Margin="Margin.Dense" Style="min-width:180px">
+            <MudSelectItem Value="CashMovementType.Deposit">Ingreso de efectivo</MudSelectItem>
+            <MudSelectItem Value="CashMovementType.Withdrawal">Retiro de efectivo</MudSelectItem>
+            <MudSelectItem Value="CashMovementType.Refund">Devolución</MudSelectItem>
+        </MudSelect>
+        <MudNumericField @bind-Value="Model.Amount" Label="Monto" Variant="Variant.Outlined" Margin="Margin.Dense"
+                         Min="0" Format="N2" For="@(() => Model.Amount)" Style="min-width:140px" />
+        <MudTextField @bind-Value="Model.Description" Label="Descripción (opcional)" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" For="@(() => Model.Description)" Style="min-width:220px" />
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+                   Disabled="Busy" Class="mt-1">Registrar</MudButton>
+    </MudStack>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired] public MovementFormModel Model { get; set; } = default!;
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback<MovementFormModel> OnValidSubmit { get; set; }
+
+    private Task HandleSubmit() => OnValidSubmit.InvokeAsync(Model);
+}

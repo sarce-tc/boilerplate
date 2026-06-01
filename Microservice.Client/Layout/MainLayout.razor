@@ -1,0 +1,113 @@
+@*
+    Shell layout. Hosts the MudBlazor providers, the app bar (with connectivity + sync-queue
+    indicators and logout), the nav drawer, and a per-section ErrorBoundary so a failure in one
+    feature does not blank the whole app. Also the startup point for offline services.
+*@
+@inherits LayoutComponentBase
+@using Microservice.Client.Infrastructure.Auth
+@using Microservice.Client.Infrastructure.Offline
+@using Microservice.Client.Infrastructure.Offline.Sync
+@implements IDisposable
+@inject IConnectivity Connectivity
+@inject SyncProcessor SyncProcessor
+@inject ISyncQueue SyncQueue
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       OnClick="@(() => _drawerOpen = !_drawerOpen)" aria-label="Menú" />
+        <MudText Typo="Typo.h6">POS</MudText>
+        <MudSpacer />
+
+        <MudTooltip Text="@(_isOnline ? "En línea" : "Sin conexión")">
+            <MudIcon Icon="@(_isOnline ? Icons.Material.Filled.CloudDone : Icons.Material.Filled.CloudOff)"
+                     Color="@(_isOnline ? Color.Success : Color.Warning)" />
+        </MudTooltip>
+
+        @if (_pending > 0)
+        {
+            <MudTooltip Text="@($"{_pending} operación(es) pendientes de sincronizar")">
+                <MudBadge Content="_pending" Color="Color.Warning" Overlap Class="mx-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Sync" />
+                </MudBadge>
+            </MudTooltip>
+        }
+
+        <AuthorizeView>
+            <Authorized>
+                <MudButton Color="Color.Inherit" StartIcon="@Icons.Material.Filled.Logout"
+                           OnClick="Logout">Salir</MudButton>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Always">
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="pa-6">
+            <ErrorBoundary @ref="_errorBoundary">
+                <ChildContent>@Body</ChildContent>
+                <ErrorContent Context="ex">
+                    <MudAlert Severity="Severity.Error" Class="my-4">
+                        Algo salió mal en esta sección.
+                        <MudButton Variant="Variant.Text" OnClick="ResetError">Reintentar</MudButton>
+                    </MudAlert>
+                </ErrorContent>
+            </ErrorBoundary>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isOnline = true;
+    private int _pending;
+    private ErrorBoundary? _errorBoundary;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Bring the offline stack online: connectivity events + sync draining.
+        await Connectivity.InitializeAsync();
+        _isOnline = Connectivity.IsOnline;
+        Connectivity.StatusChanged += OnConnectivityChanged;
+
+        SyncQueue.Changed += OnQueueChanged;
+        SyncProcessor.Start();
+
+        _pending = await SyncQueue.CountAsync();
+        await SyncProcessor.DrainAsync();
+    }
+
+    private void OnConnectivityChanged(bool online) =>
+        InvokeAsync(() => { _isOnline = online; StateHasChanged(); });
+
+    private async void OnQueueChanged() =>
+        await InvokeAsync(async () => { _pending = await SyncQueue.CountAsync(); StateHasChanged(); });
+
+    private void ResetError() => _errorBoundary?.Recover();
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        Nav.NavigateTo("/login");
+    }
+
+    // Only detach our own subscriptions and stop the processor reacting. These services are
+    // DI-owned (effectively singletons in WASM) — the container disposes them at app shutdown.
+    // Disposing them here would break the next MainLayout instance (e.g. after login).
+    public void Dispose()
+    {
+        Connectivity.StatusChanged -= OnConnectivityChanged;
+        SyncQueue.Changed -= OnQueueChanged;
+        SyncProcessor.Stop();
+    }
+}

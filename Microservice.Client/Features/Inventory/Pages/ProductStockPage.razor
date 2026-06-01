@@ -1,0 +1,97 @@
+@*
+    Smart page: a single product's stock balance + movement ledger. Reached from the stock
+    overview or the catalog. Allows registering a movement with the product preset.
+*@
+@page "/inventory/{ProductPublicId:guid}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microservice.Client.Features.Inventory.Components
+@using Microservice.Client.Features.Inventory.Models
+@using Microservice.Client.Features.Inventory.Services
+@using Microservice.Client.Features.Products.Services
+@using Microservice.Client.Shared.Results
+@inject IInventoryGateway Gateway
+@inject IProductsGateway Products
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>Stock del producto · POS</PageTitle>
+
+<MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4" HtmlTag="h1">@(_productDisplay ?? "Stock del producto")</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddBox"
+               OnClick="RegisterMovement">Registrar movimiento</MudButton>
+</MudStack>
+
+<MudGrid>
+    <MudItem xs="12" md="4">
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.overline">Stock actual</MudText>
+            @if (_stock is not null)
+            {
+                <MudText Typo="Typo.h3" Color="@(_stock.IsOutOfStock ? Color.Error : Color.Default)">
+                    @_stock.QuantityOnHand.ToString("0.##")
+                </MudText>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Sin registro de stock para este producto.</MudText>
+            }
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="8">
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.subtitle1" Class="mb-2">Movimientos</MudText>
+            <InventoryMovementsTable Movements="_movements" />
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public Guid ProductPublicId { get; set; }
+
+    private StockItemVm? _stock;
+    private IReadOnlyList<InventoryMovementVm> _movements = [];
+    private string? _productDisplay;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var product = await Products.GetByIdAsync(ProductPublicId);
+        if (product.IsSuccess)
+            _productDisplay = $"{product.Value!.Name} ({product.Value.Sku})";
+
+        var stock = await Gateway.GetStockByProductAsync(ProductPublicId);
+        _stock = stock.IsSuccess ? stock.Value : null; // 404 = no stock record yet
+
+        var movements = await Gateway.GetMovementsByProductAsync(ProductPublicId);
+        if (movements.IsSuccess)
+            _movements = movements.Value!;
+    }
+
+    private async Task RegisterMovement()
+    {
+        var preset = (ProductPublicId, _productDisplay ?? ProductPublicId.ToString());
+        var parameters = new DialogParameters<RegisterMovementDialog>
+        {
+            { x => x.Preset, ((Guid, string)?)preset }
+        };
+        var dialog = await DialogService.ShowAsync<RegisterMovementDialog>("Registrar movimiento de inventario",
+            parameters, new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled || result.Data is not RegisterInventoryMovementRequest request)
+            return;
+
+        var ack = await Gateway.RegisterMovementAsync(request);
+        await ack.Match(
+            onSuccess: async cmd =>
+            {
+                Snackbar.Add(cmd.Queued ? "Movimiento encolado." : "Movimiento registrado.",
+                    cmd.Queued ? Severity.Info : Severity.Success);
+                await LoadAsync();
+            },
+            onError: err => { Snackbar.Add(err.Message, Severity.Error); return Task.CompletedTask; });
+    }
+}
